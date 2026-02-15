@@ -11,7 +11,7 @@ import { Projectile } from "../entities/Projectile";
 import { SeedPickup } from "../entities/SeedPickup";
 import { Wormhole } from "../entities/Wormhole";
 import { AudioSystem } from "../systems/AudioSystem";
-import { GlitterComboSystem, type GlitterComboAction } from "../systems/glitterCombo";
+import { GlitterComboSystem, tapsToAction, type GlitterComboAction } from "../systems/glitterCombo";
 import { InputSystem } from "../systems/InputSystem";
 import { SaveSystem } from "../systems/SaveSystem";
 import { SpawnSystem } from "../systems/SpawnSystem";
@@ -171,13 +171,13 @@ export class LevelScene extends Phaser.Scene {
     }
 
     if (input.spaceTapped) {
-      this.comboSystem.registerTap(time);
+      const tapCount = this.comboSystem.registerTap(time);
+      this.executeComboAction(tapsToAction(tapCount), time);
+      if (tapCount >= 3) {
+        this.comboSystem.clear();
+      }
     }
-
-    const comboAction = this.comboSystem.resolve(time);
-    if (comboAction) {
-      this.executeComboAction(comboAction, time);
-    }
+    this.comboSystem.expire(time);
 
     if (input.bloomPressed) {
       this.tryActivateUniverseBloom(time);
@@ -353,19 +353,21 @@ export class LevelScene extends Phaser.Scene {
       this.fireGlitterShot();
       this.hud.flashCheckpoint("Glitter Shot");
       this.audioSystem.playAbility();
+      this.cameras.main.shake(40, 0.0015);
       return;
     }
 
     if (action === "bomb") {
-      this.triggerGlitterBomb(170, 32, 1000, time);
+      this.triggerGlitterBomb(220, 48, 1400, time);
       this.hud.flashCheckpoint("Glitter Bomb");
       this.audioSystem.playAbility();
+      this.cameras.main.shake(110, 0.0042);
       return;
     }
 
-    this.shieldUntil = Math.max(this.shieldUntil, time + 1700);
-    this.hud.flashCheckpoint("Glitter Shield");
+    this.activateShield(time);
     this.audioSystem.playAbility();
+    this.cameras.main.shake(70, 0.0024);
   }
 
   private fireGlitterShot(): void {
@@ -381,16 +383,26 @@ export class LevelScene extends Phaser.Scene {
       dirY = dy / distance;
     }
 
-    const speed = 650;
+    const speed = 930;
     const shot = new GlitterShot(
       this,
       this.player.x + dirX * 20,
       this.player.y + dirY * 12,
       dirX * speed,
       dirY * speed,
-      28,
+      44,
     );
     this.glitterShots.add(shot);
+
+    const flash = this.add.circle(this.player.x + dirX * 10, this.player.y + dirY * 6, 8, 0xd4ffff, 0.75);
+    flash.setDepth(16);
+    this.tweens.add({
+      targets: flash,
+      alpha: 0,
+      scale: 2.1,
+      duration: 120,
+      onComplete: () => flash.destroy(),
+    });
   }
 
   private triggerGlitterBomb(radius: number, damage: number, stunMs: number, time: number): void {
@@ -429,6 +441,10 @@ export class LevelScene extends Phaser.Scene {
       if (distance <= radius + 30) {
         predator.stun(stunMs, time);
         predator.applyDamage(damage);
+        const dx = predator.x - x;
+        const dy = predator.y - y;
+        const len = Math.max(1, Math.hypot(dx, dy));
+        predator.setVelocity((dx / len) * 330, (dy / len) * 330);
       }
       return true;
     });
@@ -436,14 +452,49 @@ export class LevelScene extends Phaser.Scene {
     if (this.boss && this.boss.isAlive()) {
       const distance = Phaser.Math.Distance.Between(x, y, this.boss.x, this.boss.y);
       if (distance <= radius + 70) {
-        this.boss.stun(680, time);
-        this.boss.applyDamage(130, time);
+        this.boss.stun(900, time);
+        this.boss.applyDamage(220, time);
       }
     }
 
     if (popped > 0) {
       this.hud.flashCheckpoint(`Bomb popped ${popped}`);
     }
+  }
+
+  private activateShield(time: number): void {
+    this.shieldUntil = Math.max(this.shieldUntil, time + 2300);
+
+    const x = this.player.x;
+    const y = this.player.y;
+    const radius = 210;
+    let reflected = 0;
+
+    const ring = this.add.circle(x, y, 20, 0xbdefff, 0.2);
+    ring.setStrokeStyle(4, 0xe7fdff, 0.82);
+    ring.setDepth(20);
+    this.tweens.add({
+      targets: ring,
+      radius,
+      alpha: 0,
+      duration: 240,
+      onComplete: () => ring.destroy(),
+    });
+
+    this.projectiles.children.each((entry) => {
+      const projectile = entry as Projectile;
+      if (projectile.owner !== "enemy") {
+        return true;
+      }
+      const distance = Phaser.Math.Distance.Between(x, y, projectile.x, projectile.y);
+      if (distance <= radius) {
+        projectile.reflectFrom(x, y, 1.35);
+        reflected += 1;
+      }
+      return true;
+    });
+
+    this.hud.flashCheckpoint(reflected > 0 ? `Glitter Shield reflected ${reflected}` : "Glitter Shield");
   }
 
   private tryActivateUniverseBloom(time: number): void {

@@ -11,15 +11,16 @@ export class GlitterComboSystem {
     this.comboWindowMs = comboWindowMs;
   }
 
-  registerTap(now: number): void {
+  registerTap(now: number): number {
     if (this.taps === 0 || now > this.comboExpiresAt) {
       this.taps = 1;
       this.comboExpiresAt = now + this.comboWindowMs;
-      return;
+      return this.taps;
     }
 
     this.taps = Math.min(3, this.taps + 1);
     this.comboExpiresAt = now + this.comboWindowMs;
+    return this.taps;
   }
 
   resolve(now: number): GlitterComboAction | null {
@@ -44,6 +45,12 @@ export class GlitterComboSystem {
       return 0;
     }
     return this.taps;
+  }
+
+  expire(now: number): void {
+    if (this.taps > 0 && now >= this.comboExpiresAt) {
+      this.clear();
+    }
   }
 
   clear(): void {

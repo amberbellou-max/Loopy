@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { ABILITY_COOLDOWN_MS, CHECKPOINT_RESPAWN_HEALTH_RATIO, PLAYER_ACCEL, PLAYER_BASE_SPEED, PLAYER_DRAG, PLAYER_INVULN_MS, PLAYER_MAX_HEALTH } from "../data/balance";
+import { ABILITY_COOLDOWN_MS, CHECKPOINT_RESPAWN_HEALTH_RATIO, PLAYER_BASE_SPEED, PLAYER_DRAG, PLAYER_INVULN_MS, PLAYER_MAX_HEALTH } from "../data/balance";
 import type { AbilityType } from "../types/gameTypes";
 import type { InputSnapshot } from "../systems/InputSystem";
 import { canUseAbility, createCooldownMap, getCooldownRemainingMs } from "../systems/abilityLogic";
@@ -48,16 +48,26 @@ export class PlayerFishFairy extends Phaser.Physics.Arcade.Sprite {
 
   updateControl(input: InputSnapshot, deltaSec: number, now: number): void {
     const glideActive = now < this.glideActiveUntil;
-    const accelScale = glideActive ? 0.7 : 1;
     const maxSpeed = glideActive ? PLAYER_BASE_SPEED * 0.82 : PLAYER_BASE_SPEED;
     const body = this.arcadeBody;
 
-    if (input.moveX !== 0 || input.moveY !== 0) {
-      body.acceleration.x = input.moveX * PLAYER_ACCEL * accelScale;
-      body.acceleration.y = input.moveY * PLAYER_ACCEL * accelScale;
+    const inputMagnitude = Math.hypot(input.moveX, input.moveY);
+    const normX = inputMagnitude > 0 ? input.moveX / inputMagnitude : 0;
+    const normY = inputMagnitude > 0 ? input.moveY / inputMagnitude : 0;
+
+    // Snappier velocity steering feels better than slow acceleration buildup for arcade controls.
+    const steerLerp = 1 - Math.exp(-deltaSec * (glideActive ? 12 : 20));
+    const releaseLerp = 1 - Math.exp(-deltaSec * 28);
+
+    if (inputMagnitude > 0) {
+      body.velocity.x = Phaser.Math.Linear(body.velocity.x, normX * maxSpeed, steerLerp);
+      body.velocity.y = Phaser.Math.Linear(body.velocity.y, normY * maxSpeed, steerLerp);
     } else {
-      body.acceleration.set(0, 0);
+      body.velocity.x = Phaser.Math.Linear(body.velocity.x, 0, releaseLerp);
+      body.velocity.y = Phaser.Math.Linear(body.velocity.y, 0, releaseLerp);
     }
+
+    body.acceleration.set(0, 0);
 
     this.setMaxVelocity(maxSpeed, maxSpeed);
 

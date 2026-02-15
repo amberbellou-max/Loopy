@@ -2,9 +2,9 @@ export const GAME_WIDTH = 1280;
 export const GAME_HEIGHT = 720;
 
 export const PLAYER_MAX_HEALTH = 100;
-export const PLAYER_BASE_SPEED = 260;
-export const PLAYER_ACCEL = 850;
-export const PLAYER_DRAG = 700;
+export const PLAYER_BASE_SPEED = 330;
+export const PLAYER_ACCEL = 1800;
+export const PLAYER_DRAG = 120;
 export const PLAYER_INVULN_MS = 900;
 
 export const DAMAGE = {
