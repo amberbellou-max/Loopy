@@ -85,7 +85,7 @@ export class LevelScene extends Phaser.Scene {
   private nextTapShotAt = 0;
   private nextBombAt = 0;
   private nextShieldCastAt = 0;
-  private nextShotShakeAt = 0;
+  private nextCombatHintAt = 0;
   private nextShotFlashAt = 0;
   private shotFlashIntervalMs = 65;
   private maxEnemyProjectiles = 150;
@@ -129,12 +129,12 @@ export class LevelScene extends Phaser.Scene {
     this.nextTapShotAt = 0;
     this.nextBombAt = 0;
     this.nextShieldCastAt = 0;
-    this.nextShotShakeAt = 0;
+    this.nextCombatHintAt = 0;
     this.nextShotFlashAt = 0;
     this.shotFlashIntervalMs = Phaser.Math.Clamp(72 - this.level.id, 46, 72);
     this.holdShotIntervalMs = Phaser.Math.Clamp(180 - this.level.id * 5, 95, 150);
-    this.maxEnemyProjectiles = Phaser.Math.Clamp(110 + this.level.id * 5, 120, 190);
-    this.maxGlitterShots = Phaser.Math.Clamp(80 + this.level.id * 3, 90, 140);
+    this.maxEnemyProjectiles = Phaser.Math.Clamp(90 + this.level.id * 4, 105, 160);
+    this.maxGlitterShots = Phaser.Math.Clamp(60 + this.level.id * 2, 74, 112);
 
     this.boss = null;
     this.bossSpawned = false;
@@ -395,16 +395,12 @@ export class LevelScene extends Phaser.Scene {
       this.nextTapShotAt = time + 80;
       this.fireGlitterShot();
       this.audioSystem.playGlitterShot();
-      if (time >= this.nextShotShakeAt) {
-        this.cameras.main.shake(32, 0.0011);
-        this.nextShotShakeAt = time + 130;
-      }
       return;
     }
 
     if (action === "bomb") {
       if (time < this.nextBombAt) {
-        this.hud.flashCheckpoint("Bomb recharging");
+        this.flashCombatHint("Bomb recharging", time);
         return;
       }
       this.nextBombAt = time + 620;
@@ -416,13 +412,21 @@ export class LevelScene extends Phaser.Scene {
     }
 
     if (time < this.nextShieldCastAt) {
-      this.hud.flashCheckpoint("Shield recharging");
+      this.flashCombatHint("Shield recharging", time);
       return;
     }
     this.nextShieldCastAt = time + 2600;
     this.activateShield(time);
     this.audioSystem.playAbility();
     this.cameras.main.shake(70, 0.0024);
+  }
+
+  private flashCombatHint(label: string, time: number): void {
+    if (time < this.nextCombatHintAt) {
+      return;
+    }
+    this.nextCombatHintAt = time + 260;
+    this.hud.flashCheckpoint(label);
   }
 
   private fireGlitterShot(options: GlitterShotOptions = {}): void {
@@ -507,16 +511,6 @@ export class LevelScene extends Phaser.Scene {
     if (this.holdVolleyCharge >= 5) {
       this.fireArcVolley(20, 700, 0.24);
       this.holdVolleyCharge = 0;
-
-      const spark = this.add.circle(this.player.x, this.player.y, 10, 0xfff0b7, 0.62);
-      spark.setDepth(17);
-      this.tweens.add({
-        targets: spark,
-        alpha: 0,
-        scale: 1.8,
-        duration: 120,
-        onComplete: () => spark.destroy(),
-      });
     }
     this.nextHoldShotAt = time + this.holdShotIntervalMs;
   }

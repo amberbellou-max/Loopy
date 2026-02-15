@@ -48,6 +48,7 @@ export class InputSystem {
   private touchDashPressedFrame = false;
   private touchBloomPressedFrame = false;
   private touchControlsEl: HTMLElement | null = null;
+  private keyboardSpaceWasDown = false;
 
   constructor(scene: Phaser.Scene) {
     const keyboard = scene.input.keyboard;
@@ -89,7 +90,9 @@ export class InputSystem {
     const up = this.isDown(this.cursors.up) || this.isDown(this.keys.w) || this.touchState.up;
     const down = this.isDown(this.cursors.down) || this.isDown(this.keys.s) || this.touchState.down;
 
-    const spaceTappedKeyboard = Phaser.Input.Keyboard.JustDown(this.keys.space);
+    const keyboardSpaceDown = this.isDown(this.keys.space);
+    const spaceTappedKeyboard = keyboardSpaceDown && !this.keyboardSpaceWasDown;
+    this.keyboardSpaceWasDown = keyboardSpaceDown;
     const dashPressedKeyboard = Phaser.Input.Keyboard.JustDown(this.keys.shift);
     const bloomPressedKeyboard = Phaser.Input.Keyboard.JustDown(this.keys.q);
     const pausePressed = Phaser.Input.Keyboard.JustDown(this.keys.p) || Phaser.Input.Keyboard.JustDown(this.keys.esc);
@@ -101,7 +104,7 @@ export class InputSystem {
       moveX,
       moveY,
       spaceTapped: spaceTappedKeyboard || this.touchAbilityPressedFrame,
-      spaceHeld: this.isDown(this.keys.space) || this.touchState.ability,
+      spaceHeld: keyboardSpaceDown || this.touchState.ability,
       dashPressed: dashPressedKeyboard || this.touchDashPressedFrame,
       bloomPressed: bloomPressedKeyboard || this.touchBloomPressedFrame,
       pausePressed,
