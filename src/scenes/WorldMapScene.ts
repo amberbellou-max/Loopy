@@ -1,0 +1,88 @@
+import Phaser from "phaser";
+import { SaveSystem } from "../systems/SaveSystem";
+
+interface WorldMapData {
+  selectedLevel?: number;
+}
+
+export class WorldMapScene extends Phaser.Scene {
+  constructor() {
+    super("WorldMapScene");
+  }
+
+  create(data: WorldMapData): void {
+    const save = SaveSystem.load();
+    const selectedLevel = data.selectedLevel ?? save.highestUnlockedLevel;
+    const { width, height } = this.scale;
+
+    this.add
+      .text(width * 0.5, 70, "World Map", {
+        fontSize: "56px",
+        fontStyle: "bold",
+        color: "#d8ffef",
+      })
+      .setOrigin(0.5);
+
+    this.add
+      .text(width * 0.5, 122, `Highest unlocked level: ${save.highestUnlockedLevel}`, {
+        fontSize: "22px",
+        color: "#c4e6da",
+      })
+      .setOrigin(0.5);
+
+    const cols = 4;
+    const spacingX = 240;
+    const spacingY = 120;
+    const startX = width * 0.5 - ((cols - 1) * spacingX) / 2;
+    const startY = 210;
+
+    for (let level = 1; level <= 16; level += 1) {
+      const col = (level - 1) % cols;
+      const row = Math.floor((level - 1) / cols);
+      const x = startX + col * spacingX;
+      const y = startY + row * spacingY;
+
+      const unlocked = level <= save.highestUnlockedLevel;
+      const isSelected = level === selectedLevel;
+      const bestScore = save.levelBestScores[level] ?? 0;
+
+      const node = this.add
+        .text(x, y, `${level}`, {
+          fontSize: "38px",
+          fontStyle: "bold",
+          color: unlocked ? "#052519" : "#3c5950",
+          backgroundColor: unlocked ? (isSelected ? "#8dffd5" : "#74d9b5") : "#2d3d38",
+          padding: { x: 20, y: 12 },
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: unlocked });
+
+      if (unlocked) {
+        node.on("pointerdown", () => {
+          this.scene.start("LevelScene", { levelId: level });
+        });
+      }
+
+      this.add
+        .text(x, y + 42, unlocked ? `Best: ${bestScore}` : "Locked", {
+          fontSize: "16px",
+          color: unlocked ? "#d8ffef" : "#839a92",
+        })
+        .setOrigin(0.5);
+    }
+
+    const menuButton = this.add
+      .text(width * 0.5, height - 42, "Main Menu", {
+        fontSize: "28px",
+        color: "#052519",
+        backgroundColor: "#8ef3cd",
+        padding: { x: 20, y: 8 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    menuButton.on("pointerdown", () => {
+      this.scene.start("MainMenuScene");
+    });
+  }
+}
