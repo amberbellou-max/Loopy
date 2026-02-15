@@ -32,6 +32,9 @@ interface GlitterShotOptions {
   flashRadius?: number;
   flashDurationMs?: number;
   shotScale?: number;
+  showFlash?: boolean;
+  directionX?: number;
+  directionY?: number;
 }
 
 export class LevelScene extends Phaser.Scene {
@@ -77,6 +80,13 @@ export class LevelScene extends Phaser.Scene {
   private bloomActiveUntil = 0;
   private nextHoldShotAt = 0;
   private holdShotIntervalMs = 140;
+  private holdVolleyCharge = 0;
+  private nextShieldPulseAt = 0;
+  private nextTapShotAt = 0;
+  private nextBombAt = 0;
+  private nextShieldCastAt = 0;
+  private maxEnemyProjectiles = 150;
+  private maxGlitterShots = 90;
 
   private timeLeftSec: number | null = null;
 
@@ -111,7 +121,14 @@ export class LevelScene extends Phaser.Scene {
     this.shieldUntil = 0;
     this.bloomActiveUntil = 0;
     this.nextHoldShotAt = 0;
+    this.holdVolleyCharge = 0;
+    this.nextShieldPulseAt = 0;
+    this.nextTapShotAt = 0;
+    this.nextBombAt = 0;
+    this.nextShieldCastAt = 0;
     this.holdShotIntervalMs = Phaser.Math.Clamp(180 - this.level.id * 5, 95, 150);
+    this.maxEnemyProjectiles = Phaser.Math.Clamp(110 + this.level.id * 5, 120, 190);
+    this.maxGlitterShots = Phaser.Math.Clamp(80 + this.level.id * 3, 90, 140);
 
     this.boss = null;
     this.bossSpawned = false;
@@ -202,6 +219,7 @@ export class LevelScene extends Phaser.Scene {
 
     if (time < this.shieldUntil) {
       this.player.setTint(0xa4f3ff);
+      this.updateShieldAura(time);
     } else if (!this.player.isInvulnerable(time)) {
       this.player.clearTint();
     }
@@ -214,7 +232,7 @@ export class LevelScene extends Phaser.Scene {
     this.predators.children.each((entry) => {
       const predator = entry as FlashPredator;
       predator.updateBehavior(time, this.player, (projectile) => {
-        this.projectiles.add(projectile);
+        this.enqueueEnemyProjectile(projectile);
       });
       return true;
     });
@@ -228,7 +246,7 @@ export class LevelScene extends Phaser.Scene {
         hole.suppressShots(this.bloomActiveUntil);
       }
       hole.updateBehavior(time, this.player, (projectile) => {
-        this.projectiles.add(projectile);
+        this.enqueueEnemyProjectile(projectile);
         this.audioSystem.playWormholePulse();
       });
       hole.pullTarget(this.player, deltaSec);
@@ -241,7 +259,7 @@ export class LevelScene extends Phaser.Scene {
 
     if (this.boss && this.boss.isAlive()) {
       this.boss.updateBehavior(time, this.player, {
-        spawnProjectile: (projectile) => this.projectiles.add(projectile),
+        spawnProjectile: (projectile) => this.enqueueEnemyProjectile(projectile),
         spawnAdds: (phase) => this.spawnBossAdds(phase),
       });
       this.hud.updateBoss(true, this.boss.getHpRatio(), this.boss.getPhase());
@@ -365,6 +383,10 @@ export class LevelScene extends Phaser.Scene {
 
   private executeComboAction(action: GlitterComboAction, time: number): void {
     if (action === "shot") {
+      if (time < this.nextTapShotAt) {
+        return;
+      }
+      this.nextTapShotAt = time + 80;
       this.fireGlitterShot();
       this.hud.flashCheckpoint("Glitter Shot");
       this.audioSystem.playAbility();
@@ -373,6 +395,11 @@ export class LevelScene extends Phaser.Scene {
     }
 
     if (action === "bomb") {
+      if (time < this.nextBombAt) {
+        this.hud.flashCheckpoint("Bomb recharging");
+        return;
+      }
+      this.nextBombAt = time + 620;
       this.triggerGlitterBomb(220, 48, 1400, time);
       this.hud.flashCheckpoint("Glitter Bomb");
       this.audioSystem.playAbility();
@@ -380,6 +407,11 @@ export class LevelScene extends Phaser.Scene {
       return;
     }
 
+    if (time < this.nextShieldCastAt) {
+      this.hud.flashCheckpoint("Shield recharging");
+      return;
+    }
+    this.nextShieldCastAt = time + 2600;
     this.activateShield(time);
     this.audioSystem.playAbility();
     this.cameras.main.shake(70, 0.0024);
@@ -393,17 +425,20 @@ export class LevelScene extends Phaser.Scene {
     const flashRadius = options.flashRadius ?? 8;
     const flashDurationMs = options.flashDurationMs ?? 120;
     const shotScale = options.shotScale ?? 2;
+    const showFlash = options.showFlash ?? true;
 
-    const target = this.findNearestTarget();
-    let dirX = this.player.getFacingDirection();
-    let dirY = 0;
+    let dirX = options.directionX ?? this.player.getFacingDirection();
+    let dirY = options.directionY ?? 0;
 
-    if (target) {
-      const dx = target.x - this.player.x;
-      const dy = target.y - this.player.y;
-      const distance = Math.max(1, Math.hypot(dx, dy));
-      dirX = dx / distance;
-      dirY = dy / distance;
+    if (options.directionX === undefined || options.directionY === undefined) {
+      const target = this.findNearestTarget();
+      if (target) {
+        const dx = target.x - this.player.x;
+        const dy = target.y - this.player.y;
+        const distance = Math.max(1, Math.hypot(dx, dy));
+        dirX = dx / distance;
+        dirY = dy / distance;
+      }
     }
 
     const shot = new GlitterShot(
@@ -415,22 +450,26 @@ export class LevelScene extends Phaser.Scene {
       damage,
     );
     shot.setScale(shotScale);
+    this.ensureGroupCapacity(this.glitterShots, this.maxGlitterShots);
     this.glitterShots.add(shot);
 
-    const flash = this.add.circle(this.player.x + dirX * 10, this.player.y + dirY * 6, flashRadius, flashColor, flashAlpha);
-    flash.setDepth(16);
-    this.tweens.add({
-      targets: flash,
-      alpha: 0,
-      scale: 2.1,
-      duration: flashDurationMs,
-      onComplete: () => flash.destroy(),
-    });
+    if (showFlash) {
+      const flash = this.add.circle(this.player.x + dirX * 10, this.player.y + dirY * 6, flashRadius, flashColor, flashAlpha);
+      flash.setDepth(16);
+      this.tweens.add({
+        targets: flash,
+        alpha: 0,
+        scale: 2.1,
+        duration: flashDurationMs,
+        onComplete: () => flash.destroy(),
+      });
+    }
   }
 
   private updateSpaceHoldFire(spaceHeld: boolean, spaceTapped: boolean, time: number): void {
     if (!spaceHeld) {
       this.nextHoldShotAt = 0;
+      this.holdVolleyCharge = 0;
       return;
     }
 
@@ -450,13 +489,59 @@ export class LevelScene extends Phaser.Scene {
     this.fireGlitterShot({
       damage: 26,
       speed: 860,
-      flashColor: 0xfff5b9,
-      flashAlpha: 0.66,
-      flashRadius: 6,
-      flashDurationMs: 80,
       shotScale: 1.7,
+      showFlash: false,
     });
+
+    this.holdVolleyCharge += 1;
+    if (this.holdVolleyCharge >= 5) {
+      this.fireArcVolley(20, 700, 0.24);
+      this.holdVolleyCharge = 0;
+
+      const spark = this.add.circle(this.player.x, this.player.y, 10, 0xfff0b7, 0.62);
+      spark.setDepth(17);
+      this.tweens.add({
+        targets: spark,
+        alpha: 0,
+        scale: 1.8,
+        duration: 120,
+        onComplete: () => spark.destroy(),
+      });
+    }
     this.nextHoldShotAt = time + this.holdShotIntervalMs;
+  }
+
+  private fireArcVolley(damage: number, speed: number, spread: number): void {
+    const target = this.findNearestTarget();
+    let baseX = this.player.getFacingDirection();
+    let baseY = 0;
+    if (target) {
+      const dx = target.x - this.player.x;
+      const dy = target.y - this.player.y;
+      const distance = Math.max(1, Math.hypot(dx, dy));
+      baseX = dx / distance;
+      baseY = dy / distance;
+    }
+
+    const baseAngle = Math.atan2(baseY, baseX);
+    for (const offset of [-spread, spread]) {
+      const angle = baseAngle + offset;
+      const dirX = Math.cos(angle);
+      const dirY = Math.sin(angle);
+      this.fireGlitterShot({
+        damage,
+        speed,
+        shotScale: 1.55,
+        showFlash: false,
+        directionX: dirX,
+        directionY: dirY,
+      });
+      const children = this.glitterShots.getChildren();
+      const latestShot = (children[children.length - 1] as GlitterShot | undefined) ?? undefined;
+      if (latestShot?.active) {
+        latestShot.setVelocity(dirX * speed, dirY * speed);
+      }
+    }
   }
 
   private triggerGlitterBomb(radius: number, damage: number, stunMs: number, time: number): void {
@@ -518,6 +603,7 @@ export class LevelScene extends Phaser.Scene {
 
   private activateShield(time: number): void {
     this.shieldUntil = Math.max(this.shieldUntil, time + 2300);
+    this.nextShieldPulseAt = time;
 
     const x = this.player.x;
     const y = this.player.y;
@@ -543,6 +629,7 @@ export class LevelScene extends Phaser.Scene {
       const distance = Phaser.Math.Distance.Between(x, y, projectile.x, projectile.y);
       if (distance <= radius) {
         projectile.reflectFrom(x, y, 1.35);
+        projectile.setData("shieldIgnoreUntil", time + 90);
         reflected += 1;
       }
       return true;
@@ -560,6 +647,7 @@ export class LevelScene extends Phaser.Scene {
     this.bloomMeter = 0;
     this.bloomActiveUntil = time + 2300;
     this.shieldUntil = Math.max(this.shieldUntil, time + 1300);
+    this.nextShieldPulseAt = Math.min(this.nextShieldPulseAt, time + 60);
 
     let cleared = 0;
     this.projectiles.children.each((entry) => {
@@ -655,7 +743,12 @@ export class LevelScene extends Phaser.Scene {
     }
 
     if (this.time.now < this.shieldUntil) {
+      const ignoreUntil = Number(projectile.getData("shieldIgnoreUntil") ?? 0);
+      if (this.time.now < ignoreUntil) {
+        return;
+      }
       projectile.reflectFrom(this.player.x, this.player.y);
+      projectile.setData("shieldIgnoreUntil", this.time.now + 90);
       return;
     }
 
@@ -817,6 +910,73 @@ export class LevelScene extends Phaser.Scene {
         shotPattern: phase === 3 ? "burst" : "spread",
       });
       this.predators.add(enemy);
+    }
+  }
+
+  private updateShieldAura(time: number): void {
+    if (time < this.nextShieldPulseAt) {
+      return;
+    }
+    this.nextShieldPulseAt = time + 220;
+
+    const radius = 132;
+    let reflected = 0;
+
+    this.projectiles.children.each((entry) => {
+      const projectile = entry as Projectile;
+      if (projectile.owner !== "enemy") {
+        return true;
+      }
+      if (Phaser.Math.Distance.Between(this.player.x, this.player.y, projectile.x, projectile.y) > radius) {
+        return true;
+      }
+      projectile.reflectFrom(this.player.x, this.player.y, 1.22);
+      projectile.setData("shieldIgnoreUntil", time + 90);
+      reflected += 1;
+      return true;
+    });
+
+    this.predators.children.each((entry) => {
+      const predator = entry as FlashPredator;
+      if (Phaser.Math.Distance.Between(this.player.x, this.player.y, predator.x, predator.y) <= radius + 16) {
+        predator.stun(260, time);
+        predator.applyDamage(6);
+      }
+      return true;
+    });
+
+    if (reflected > 0) {
+      const pulse = this.add.circle(this.player.x, this.player.y, 12, 0xe7fdff, 0.2);
+      pulse.setDepth(18);
+      this.tweens.add({
+        targets: pulse,
+        radius,
+        alpha: 0,
+        duration: 180,
+        onComplete: () => pulse.destroy(),
+      });
+    }
+  }
+
+  private enqueueEnemyProjectile(projectile: Projectile): void {
+    this.ensureGroupCapacity(this.projectiles, this.maxEnemyProjectiles);
+    this.projectiles.add(projectile);
+  }
+
+  private ensureGroupCapacity(group: Phaser.Physics.Arcade.Group, maxActive: number): void {
+    let active = group.countActive(true);
+    if (active < maxActive) {
+      return;
+    }
+
+    const entries = group.getChildren();
+    for (let i = 0; i < entries.length && active >= maxActive; i += 1) {
+      const entry = entries[i] as Phaser.GameObjects.GameObject & { active: boolean; destroy: () => void };
+      if (!entry.active) {
+        continue;
+      }
+      entry.destroy();
+      active -= 1;
     }
   }
 

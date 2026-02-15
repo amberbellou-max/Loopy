@@ -37,10 +37,30 @@ export class Projectile extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body;
     const dx = this.x - pointX;
     const dy = this.y - pointY;
-    const distance = Math.max(1, Math.hypot(dx, dy));
+    const distance = Math.hypot(dx, dy);
     const speed = Math.max(220, body.velocity.length() * speedMultiplier);
 
-    this.setVelocity((dx / distance) * speed, (dy / distance) * speed);
+    let dirX: number;
+    let dirY: number;
+
+    if (distance < 6) {
+      const velocityLength = body.velocity.length();
+      if (velocityLength > 1) {
+        // Use opposite of incoming velocity when impact is near center to avoid zero-direction stalls.
+        dirX = -body.velocity.x / velocityLength;
+        dirY = -body.velocity.y / velocityLength;
+      } else {
+        const fallbackAngle = Math.random() * Math.PI * 2;
+        dirX = Math.cos(fallbackAngle);
+        dirY = Math.sin(fallbackAngle);
+      }
+      this.setPosition(pointX + dirX * 18, pointY + dirY * 18);
+    } else {
+      dirX = dx / distance;
+      dirY = dy / distance;
+    }
+
+    this.setVelocity(dirX * speed, dirY * speed);
     this.owner = "player";
     this.damage = Math.max(this.damage, 20);
     this.setTint(0x9cf7ff);
