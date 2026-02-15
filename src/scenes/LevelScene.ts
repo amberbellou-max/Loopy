@@ -85,6 +85,9 @@ export class LevelScene extends Phaser.Scene {
   private nextTapShotAt = 0;
   private nextBombAt = 0;
   private nextShieldCastAt = 0;
+  private nextShotShakeAt = 0;
+  private nextShotFlashAt = 0;
+  private shotFlashIntervalMs = 65;
   private maxEnemyProjectiles = 150;
   private maxGlitterShots = 90;
 
@@ -126,6 +129,9 @@ export class LevelScene extends Phaser.Scene {
     this.nextTapShotAt = 0;
     this.nextBombAt = 0;
     this.nextShieldCastAt = 0;
+    this.nextShotShakeAt = 0;
+    this.nextShotFlashAt = 0;
+    this.shotFlashIntervalMs = Phaser.Math.Clamp(72 - this.level.id, 46, 72);
     this.holdShotIntervalMs = Phaser.Math.Clamp(180 - this.level.id * 5, 95, 150);
     this.maxEnemyProjectiles = Phaser.Math.Clamp(110 + this.level.id * 5, 120, 190);
     this.maxGlitterShots = Phaser.Math.Clamp(80 + this.level.id * 3, 90, 140);
@@ -388,9 +394,11 @@ export class LevelScene extends Phaser.Scene {
       }
       this.nextTapShotAt = time + 80;
       this.fireGlitterShot();
-      this.hud.flashCheckpoint("Glitter Shot");
-      this.audioSystem.playAbility();
-      this.cameras.main.shake(40, 0.0015);
+      this.audioSystem.playGlitterShot();
+      if (time >= this.nextShotShakeAt) {
+        this.cameras.main.shake(32, 0.0011);
+        this.nextShotShakeAt = time + 130;
+      }
       return;
     }
 
@@ -453,7 +461,8 @@ export class LevelScene extends Phaser.Scene {
     this.ensureGroupCapacity(this.glitterShots, this.maxGlitterShots);
     this.glitterShots.add(shot);
 
-    if (showFlash) {
+    if (showFlash && this.time.now >= this.nextShotFlashAt) {
+      this.nextShotFlashAt = this.time.now + this.shotFlashIntervalMs;
       const flash = this.add.circle(this.player.x + dirX * 10, this.player.y + dirY * 6, flashRadius, flashColor, flashAlpha);
       flash.setDepth(16);
       this.tweens.add({
@@ -492,6 +501,7 @@ export class LevelScene extends Phaser.Scene {
       shotScale: 1.7,
       showFlash: false,
     });
+    this.audioSystem.playGlitterShot();
 
     this.holdVolleyCharge += 1;
     if (this.holdVolleyCharge >= 5) {

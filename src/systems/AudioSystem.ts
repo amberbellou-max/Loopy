@@ -7,6 +7,10 @@ export class AudioSystem {
   private musicEvent: Phaser.Time.TimerEvent | null = null;
   private musicVolume = 0.45;
   private sfxVolume = 0.55;
+  private activeVoices = 0;
+  private readonly maxVoices = 32;
+  private lastAbilityAt = 0;
+  private lastGlitterShotAt = 0;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -51,8 +55,22 @@ export class AudioSystem {
   }
 
   playAbility(): void {
+    const now = this.scene.time.now;
+    if (now - this.lastAbilityAt < 80) {
+      return;
+    }
+    this.lastAbilityAt = now;
     this.playTone(400, 0.12, this.sfxVolume * 0.65, "square");
     this.playTone(800, 0.08, this.sfxVolume * 0.5, "triangle");
+  }
+
+  playGlitterShot(): void {
+    const now = this.scene.time.now;
+    if (now - this.lastGlitterShotAt < 55) {
+      return;
+    }
+    this.lastGlitterShotAt = now;
+    this.playTone(970, 0.05, this.sfxVolume * 0.3, "triangle");
   }
 
   playCheckpoint(): void {
@@ -94,6 +112,9 @@ export class AudioSystem {
     if (!context) {
       return;
     }
+    if (this.activeVoices >= this.maxVoices) {
+      return;
+    }
 
     const oscillator = context.createOscillator();
     const gainNode = context.createGain();
@@ -110,6 +131,10 @@ export class AudioSystem {
     gainNode.gain.exponentialRampToValueAtTime(Math.max(0.0001, volume), now + 0.02);
     gainNode.gain.exponentialRampToValueAtTime(0.0001, now + durationSec);
 
+    this.activeVoices += 1;
+    oscillator.onended = () => {
+      this.activeVoices = Math.max(0, this.activeVoices - 1);
+    };
     oscillator.start(now);
     oscillator.stop(now + durationSec + 0.02);
   }
