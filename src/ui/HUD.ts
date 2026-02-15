@@ -24,7 +24,7 @@ export class HUD {
 
     const margin = HUD_CONFIG.margin;
 
-    this.healthBg = scene.add.rectangle(margin + 100, margin + 12, 200, 18, 0x122920, 0.9).setOrigin(0, 0);
+    this.healthBg = scene.add.rectangle(margin + 100, margin + 12, 200, 18, 0x1c3d35, 0.9).setOrigin(0, 0);
     this.healthFill = scene.add.rectangle(margin + 102, margin + 14, 196, 14, 0x56dfb3, 0.95).setOrigin(0, 0);
 
     this.quotaText = scene.add.text(margin, margin + 38, "Quota: 0/0", {
@@ -53,8 +53,8 @@ export class HUD {
       fontSize: "18px",
     });
 
-    this.comboText = scene.add.text(scene.scale.width - margin, margin + 12, "Combo: -", {
-      color: "#d7f7ff",
+    this.comboText = scene.add.text(scene.scale.width - margin, margin + 12, "Combo: Hold fire", {
+      color: "#f6fff0",
       fontSize: "20px",
       fontStyle: "bold",
       stroke: "#03170f",
@@ -142,7 +142,7 @@ export class HUD {
   }
 
   updateCombo(taps: number): void {
-    this.comboText.setText(taps > 0 ? `Combo: ${taps}x` : "Combo: -");
+    this.comboText.setText(taps > 0 ? `Combo: ${taps}x` : "Combo: Hold fire");
   }
 
   updateCheckpointCost(cost: number): void {

@@ -21,9 +21,9 @@ export class PreloadScene extends Phaser.Scene {
       ".cffffc.",
       "..cccc..",
     ], {
-      c: "#2b8f73",
-      f: "#7be8c0",
-      7: "#d8fff0",
+      c: "#34b7a9",
+      f: "#8bffe0",
+      7: "#f4fff8",
     });
 
     this.drawPixelTexture("food_river_fish", [
@@ -36,8 +36,8 @@ export class PreloadScene extends Phaser.Scene {
       "...bb...",
       "........",
     ], {
-      b: "#3d87d5",
-      9: "#8dd9ff",
+      b: "#4aa5ff",
+      9: "#d2f3ff",
     });
 
     this.drawPixelTexture("food_earth_hopper_fish", [
@@ -50,8 +50,8 @@ export class PreloadScene extends Phaser.Scene {
       "..g..g..",
       ".g....g.",
     ], {
-      g: "#4b8d34",
-      8: "#a9f46d",
+      g: "#5fba3f",
+      8: "#ccff7a",
     });
 
     this.drawPixelTexture("food_grass_bite", [
@@ -64,8 +64,8 @@ export class PreloadScene extends Phaser.Scene {
       "........",
       "........",
     ], {
-      m: "#2f9950",
-      6: "#6af9a6",
+      m: "#43c96f",
+      6: "#b6ffd7",
     });
 
     this.drawPixelTexture("food_locust", [
@@ -78,22 +78,22 @@ export class PreloadScene extends Phaser.Scene {
       ".y....y.",
       "........",
     ], {
-      y: "#b3952f",
-      5: "#f3ea73",
+      y: "#ffc74c",
+      5: "#fff78a",
     });
 
     this.drawPixelTexture("predator", [
       "..rrrr..",
-      ".rr111rr.",
+      ".rr11rr.",
       "rr1111rr",
       "r111111r",
       "r111111r",
       "rr1111rr",
-      ".rr111rr.",
+      ".rr11rr.",
       "..rrrr..",
     ], {
-      r: "#9e4020",
-      1: "#ff8f65",
+      r: "#ff5c6c",
+      1: "#ffd2b1",
     });
 
     this.drawPixelTexture("wormhole_core", [
@@ -106,9 +106,9 @@ export class PreloadScene extends Phaser.Scene {
       "..p22p..",
       "...pp...",
     ], {
-      p: "#3f329a",
-      2: "#6d5df6",
-      a: "#101828",
+      p: "#5f3cff",
+      2: "#9a7aff",
+      a: "#0d0a1f",
     });
 
     this.drawPixelTexture("projectile_enemy", [
@@ -119,8 +119,8 @@ export class PreloadScene extends Phaser.Scene {
       ".oeeo.",
       "..oo..",
     ], {
-      o: "#a8651c",
-      e: "#ffd078",
+      o: "#ff8f3e",
+      e: "#fff0ab",
     });
 
     this.drawPixelTexture("projectile_blackhole", [
@@ -131,8 +131,8 @@ export class PreloadScene extends Phaser.Scene {
       ".k44k.",
       "..kk..",
     ], {
-      k: "#101828",
-      4: "#2f3a49",
+      k: "#0d1220",
+      4: "#4d5a77",
     });
 
     this.drawPixelTexture("glitter_shot", [
@@ -145,8 +145,8 @@ export class PreloadScene extends Phaser.Scene {
       "....s...",
       "........",
     ], {
-      s: "#3eb0d4",
-      9: "#c8ffff",
+      s: "#6de6ff",
+      9: "#fffbe9",
     });
 
     this.drawPixelTexture("pickup_seed", [
@@ -159,8 +159,8 @@ export class PreloadScene extends Phaser.Scene {
       "....n...",
       "........",
     ], {
-      n: "#2f9e50",
-      3: "#7ce68f",
+      n: "#43c769",
+      3: "#c5ffd2",
     });
 
     this.drawPixelTexture("pickup_universe_seed", [
@@ -173,8 +173,8 @@ export class PreloadScene extends Phaser.Scene {
       "..u...u.",
       "........",
     ], {
-      u: "#4f3da8",
-      4: "#ad95ff",
+      u: "#6e5bff",
+      4: "#dbc4ff",
     });
 
     this.drawPixelTexture("pickup_life", [
@@ -187,8 +187,8 @@ export class PreloadScene extends Phaser.Scene {
       "...hh...",
       "........",
     ], {
-      h: "#8f2d36",
-      H: "#ff7a86",
+      h: "#c9415a",
+      H: "#ffb7c0",
     });
 
     this.drawPixelTexture("boss_core", [
@@ -203,18 +203,18 @@ export class PreloadScene extends Phaser.Scene {
       "...bbbb...",
       "....bb....",
     ], {
-      b: "#1e4b63",
-      8: "#66d5ff",
-      7: "#d7fbff",
-      a: "#6d5df6",
+      b: "#2f7bb0",
+      8: "#87e4ff",
+      7: "#f0feff",
+      a: "#8d6bff",
       1: "#101828",
     });
 
-    this.drawRectTexture("hazard_vine", 32, 8, "#2f8f4e");
-    this.drawRectTexture("hazard_spike", 32, 8, "#c8a263");
+    this.drawRectTexture("hazard_vine", 32, 8, "#4fdc7b");
+    this.drawRectTexture("hazard_spike", 32, 8, "#ffd186");
 
-    this.drawRectTexture("exit_gate_jungle", 16, 40, "#74d89d");
-    this.drawRectTexture("exit_gate_desert", 16, 40, "#e2c679");
+    this.drawRectTexture("exit_gate_jungle", 16, 40, "#98ffb8");
+    this.drawRectTexture("exit_gate_desert", 16, 40, "#ffe39d");
   }
 
   private drawRectTexture(key: string, width: number, height: number, color: string): void {

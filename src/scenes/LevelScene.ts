@@ -24,6 +24,16 @@ interface LevelSceneData {
   levelId: number;
 }
 
+interface GlitterShotOptions {
+  damage?: number;
+  speed?: number;
+  flashColor?: number;
+  flashAlpha?: number;
+  flashRadius?: number;
+  flashDurationMs?: number;
+  shotScale?: number;
+}
+
 export class LevelScene extends Phaser.Scene {
   private level!: LevelDefinition;
   private difficulty!: DifficultyParams;
@@ -65,6 +75,8 @@ export class LevelScene extends Phaser.Scene {
   private bloomMeter = 0;
   private shieldUntil = 0;
   private bloomActiveUntil = 0;
+  private nextHoldShotAt = 0;
+  private holdShotIntervalMs = 140;
 
   private timeLeftSec: number | null = null;
 
@@ -98,6 +110,8 @@ export class LevelScene extends Phaser.Scene {
     this.bloomMeter = 0;
     this.shieldUntil = 0;
     this.bloomActiveUntil = 0;
+    this.nextHoldShotAt = 0;
+    this.holdShotIntervalMs = Phaser.Math.Clamp(180 - this.level.id * 5, 95, 150);
 
     this.boss = null;
     this.bossSpawned = false;
@@ -178,6 +192,7 @@ export class LevelScene extends Phaser.Scene {
       }
     }
     this.comboSystem.expire(time);
+    this.updateSpaceHoldFire(input.spaceHeld, input.spaceTapped, time);
 
     if (input.bloomPressed) {
       this.tryActivateUniverseBloom(time);
@@ -370,7 +385,15 @@ export class LevelScene extends Phaser.Scene {
     this.cameras.main.shake(70, 0.0024);
   }
 
-  private fireGlitterShot(): void {
+  private fireGlitterShot(options: GlitterShotOptions = {}): void {
+    const damage = options.damage ?? 44;
+    const speed = options.speed ?? 930;
+    const flashColor = options.flashColor ?? 0xd4ffff;
+    const flashAlpha = options.flashAlpha ?? 0.75;
+    const flashRadius = options.flashRadius ?? 8;
+    const flashDurationMs = options.flashDurationMs ?? 120;
+    const shotScale = options.shotScale ?? 2;
+
     const target = this.findNearestTarget();
     let dirX = this.player.getFacingDirection();
     let dirY = 0;
@@ -383,26 +406,57 @@ export class LevelScene extends Phaser.Scene {
       dirY = dy / distance;
     }
 
-    const speed = 930;
     const shot = new GlitterShot(
       this,
       this.player.x + dirX * 20,
       this.player.y + dirY * 12,
       dirX * speed,
       dirY * speed,
-      44,
+      damage,
     );
+    shot.setScale(shotScale);
     this.glitterShots.add(shot);
 
-    const flash = this.add.circle(this.player.x + dirX * 10, this.player.y + dirY * 6, 8, 0xd4ffff, 0.75);
+    const flash = this.add.circle(this.player.x + dirX * 10, this.player.y + dirY * 6, flashRadius, flashColor, flashAlpha);
     flash.setDepth(16);
     this.tweens.add({
       targets: flash,
       alpha: 0,
       scale: 2.1,
-      duration: 120,
+      duration: flashDurationMs,
       onComplete: () => flash.destroy(),
     });
+  }
+
+  private updateSpaceHoldFire(spaceHeld: boolean, spaceTapped: boolean, time: number): void {
+    if (!spaceHeld) {
+      this.nextHoldShotAt = 0;
+      return;
+    }
+
+    if (spaceTapped) {
+      this.nextHoldShotAt = time + this.holdShotIntervalMs;
+      return;
+    }
+
+    if (this.nextHoldShotAt === 0) {
+      this.nextHoldShotAt = time;
+    }
+
+    if (time < this.nextHoldShotAt) {
+      return;
+    }
+
+    this.fireGlitterShot({
+      damage: 26,
+      speed: 860,
+      flashColor: 0xfff5b9,
+      flashAlpha: 0.66,
+      flashRadius: 6,
+      flashDurationMs: 80,
+      shotScale: 1.7,
+    });
+    this.nextHoldShotAt = time + this.holdShotIntervalMs;
   }
 
   private triggerGlitterBomb(radius: number, damage: number, stunMs: number, time: number): void {
@@ -888,8 +942,8 @@ export class LevelScene extends Phaser.Scene {
   }
 
   private createBackground(biome: "jungle" | "desert"): void {
-    const skyColor = biome === "jungle" ? 0x073528 : 0x3f2f1c;
-    const fogColor = biome === "jungle" ? 0x0f593f : 0x7d6336;
+    const skyColor = biome === "jungle" ? 0x1d7367 : 0xc9833a;
+    const fogColor = biome === "jungle" ? 0x50d3a8 : 0xffcf7a;
 
     this.add.rectangle(this.levelWidth * 0.5, 330, this.levelWidth, 660, skyColor, 1).setDepth(-20);
 
@@ -897,17 +951,24 @@ export class LevelScene extends Phaser.Scene {
       const x = 220 + i * (this.levelWidth / 9);
       const y = 130 + (i % 3) * 78;
       const radius = 90 + (i % 4) * 24;
-      this.add.circle(x, y, radius, fogColor, 0.14).setDepth(-15);
+      this.add.circle(x, y, radius, fogColor, 0.24).setDepth(-15);
     }
 
-    const groundColor = biome === "jungle" ? 0x174f3b : 0x8f6c39;
+    for (let i = 0; i < 80; i += 1) {
+      const x = Phaser.Math.Between(20, this.levelWidth - 20);
+      const y = Phaser.Math.Between(40, 260);
+      const sparkleColor = biome === "jungle" ? 0xcffff2 : 0xfff0c3;
+      this.add.rectangle(x, y, 2, 2, sparkleColor, 0.35).setDepth(-12);
+    }
+
+    const groundColor = biome === "jungle" ? 0x1d7f5b : 0xc58a47;
     this.add.rectangle(this.levelWidth * 0.5, 620, this.levelWidth, 80, groundColor, 0.9).setDepth(-5);
 
     for (let i = 0; i < 70; i += 1) {
       const x = i * (this.levelWidth / 70) + Phaser.Math.Between(-10, 10);
       const y = Phaser.Math.Between(560, 620);
-      const color = biome === "jungle" ? 0x2f8f4e : 0xbd995f;
-      this.add.rectangle(x, y, Phaser.Math.Between(4, 10), Phaser.Math.Between(16, 28), color, 0.7).setDepth(-2);
+      const color = biome === "jungle" ? 0x69f6a1 : 0xffd07f;
+      this.add.rectangle(x, y, Phaser.Math.Between(4, 10), Phaser.Math.Between(16, 28), color, 0.82).setDepth(-2);
     }
   }
 

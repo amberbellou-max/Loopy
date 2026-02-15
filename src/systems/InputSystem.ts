@@ -4,6 +4,7 @@ export interface InputSnapshot {
   moveX: number;
   moveY: number;
   spaceTapped: boolean;
+  spaceHeld: boolean;
   dashPressed: boolean;
   bloomPressed: boolean;
   pausePressed: boolean;
@@ -83,6 +84,7 @@ export class InputSystem {
       moveX,
       moveY,
       spaceTapped: spaceTappedKeyboard || this.touchAbilityPressedFrame,
+      spaceHeld: this.isDown(this.keys.space) || this.touchState.ability,
       dashPressed: dashPressedKeyboard || this.touchDashPressedFrame,
       bloomPressed: bloomPressedKeyboard || this.touchBloomPressedFrame,
       pausePressed,

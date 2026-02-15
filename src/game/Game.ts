@@ -15,7 +15,7 @@ export function createGame(parent: string): Phaser.Game {
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
     parent,
-    backgroundColor: "#04130f",
+    backgroundColor: "#0d2b22",
     render: {
       pixelArt: true,
       antialias: false,

@@ -21,7 +21,7 @@ Loopy is a Phaser 3 + TypeScript side-scrolling game with 16 handcrafted levels.
 ## Controls
 - Keyboard
   - Move: `WASD` or arrow keys
-  - Glitter Combo: tap `Space` (1x shot, 2x bomb, 3x shield)
+  - Glitter Combat: hold `Space` for rapid fire, tap combo on `Space` (1x shot, 2x bomb, 3x shield)
   - Universe Bloom: `Q` (requires full meter)
   - Dash trigger: `Shift`
   - Pause: `P`
