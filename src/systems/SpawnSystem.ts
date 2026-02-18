@@ -1,8 +1,12 @@
 import Phaser from "phaser";
+import { ArcaneTotem } from "../entities/ArcaneTotem";
 import { FoodItem } from "../entities/FoodItem";
 import { FlashPredator } from "../entities/FlashPredator";
+import { OceanWormhole } from "../entities/OceanWormhole";
+import { RiftSkimmer } from "../entities/RiftSkimmer";
+import { SerpentStalker } from "../entities/SerpentStalker";
 import { Wormhole } from "../entities/Wormhole";
-import type { HazardRule, LevelDefinition } from "../types/gameTypes";
+import type { FoodSpawnRule, HazardRule, LevelDefinition } from "../types/gameTypes";
 import type { DifficultyParams } from "./difficulty";
 
 export interface SpawnedLevelObjects {
@@ -23,6 +27,10 @@ export class SpawnSystem {
   spawnLevel(level: LevelDefinition, difficulty: DifficultyParams): SpawnedLevelObjects {
     const foods = this.scene.physics.add.group();
     for (const rule of level.foods) {
+      if (rule.movement === "orbit") {
+        this.spawnOrbitFoodRule(foods, rule);
+        continue;
+      }
       for (let i = 0; i < rule.count; i += 1) {
         const x = rule.x + Phaser.Math.Between(-rule.spreadX, rule.spreadX);
         const y = rule.y + Phaser.Math.Between(-rule.spreadY, rule.spreadY);
@@ -65,6 +73,58 @@ export class SpawnSystem {
       );
     }
 
+    const skimmerCount = level.id >= 3 ? Math.min(3, 1 + Math.floor((level.id - 3) / 4)) : 0;
+    for (let i = 0; i < skimmerCount; i += 1) {
+      const baseRatio = 0.36 + i * 0.2;
+      const x = Phaser.Math.Clamp(level.exitGateX * baseRatio, 760, level.exitGateX - 430);
+      const y = 200 + (i % 2) * 120;
+      predators.add(
+        new RiftSkimmer(this.scene, x, y, {
+          speed: Math.round(120 * difficulty.predatorSpeedMultiplier),
+          shootIntervalMs: Math.max(500, Math.round(1600 * difficulty.predatorShootIntervalMultiplier)),
+          projectileSpeed: Math.round(315 * difficulty.projectileSpeedMultiplier),
+          hp: 64 + difficulty.levelId * 9,
+          shotPattern: "spread",
+        }),
+      );
+    }
+
+    const totemCount = level.id >= 4 ? 1 + (level.id >= 10 ? 1 : 0) + (level.id >= 15 ? 1 : 0) : 0;
+    for (let i = 0; i < totemCount; i += 1) {
+      const baseRatio = 0.5 + i * 0.16;
+      const x = Phaser.Math.Clamp(level.exitGateX * baseRatio, 1050, level.exitGateX - 260);
+      const y = 240 + (i % 2) * 120;
+      const totemHp = level.id <= 6 ? 78 + difficulty.levelId * 6 : 96 + difficulty.levelId * 10;
+      const totemShootBase = level.id <= 6 ? 2050 : 1700;
+      const totemShootFloor = level.id <= 6 ? 760 : 560;
+      predators.add(
+        new ArcaneTotem(this.scene, x, y, {
+          speed: 0,
+          shootIntervalMs: Math.max(totemShootFloor, Math.round(totemShootBase * difficulty.predatorShootIntervalMultiplier)),
+          projectileSpeed: Math.round((level.id <= 6 ? 255 : 280) * difficulty.projectileSpeedMultiplier),
+          hp: totemHp,
+          shotPattern: "single",
+        }),
+      );
+    }
+
+    const snakeCount = level.id >= 5 ? 1 + (level.id >= 10 ? 1 : 0) + (level.id >= 14 ? 1 : 0) : 0;
+    for (let i = 0; i < snakeCount; i += 1) {
+      const x = Phaser.Math.Clamp(level.exitGateX * (0.28 + i * 0.23), 820, level.exitGateX - 360);
+      const y = 220 + (i % 2) * 110;
+      predators.add(
+        new SerpentStalker(this.scene, x, y, {
+          speed: Math.round(150 * difficulty.predatorSpeedMultiplier),
+          shootIntervalMs: Math.max(680, Math.round(1800 * difficulty.predatorShootIntervalMultiplier)),
+          projectileSpeed: Math.round(300 * difficulty.projectileSpeedMultiplier),
+          hp: 72 + difficulty.levelId * 9,
+          tailSegments: 6 + difficulty.tier,
+          tailSpacing: 6,
+          shotPattern: "single",
+        }),
+      );
+    }
+
     const wormholes = this.scene.physics.add.group();
     for (const rule of level.wormholes) {
       const hole = new Wormhole(this.scene, rule.x, rule.y, {
@@ -81,6 +141,32 @@ export class SpawnSystem {
         targets: aura,
         alpha: { from: 0.05, to: 0.15 },
         duration: 1100,
+        yoyo: true,
+        loop: -1,
+      });
+    }
+
+    const oceanWormholeCount = level.id >= 3 ? 1 + (level.id >= 9 ? 1 : 0) + (level.id >= 15 ? 1 : 0) : 0;
+    for (let i = 0; i < oceanWormholeCount; i += 1) {
+      const x = Phaser.Math.Clamp(level.exitGateX * (0.44 + i * 0.2), 960, level.exitGateX - 300);
+      const y = 240 + (i % 2) * 120;
+      const pullRadius = Phaser.Math.Clamp(190 + difficulty.tier * 15, 190, 260);
+      const oceanHole = new OceanWormhole(this.scene, x, y, {
+        pullRadius,
+        pullStrength: Math.round((680 + difficulty.levelId * 24) * difficulty.wormholePullMultiplier),
+        shootIntervalMs: Math.max(760, Math.round(2050 * difficulty.wormholeShootIntervalMultiplier)),
+        projectileSpeed: Math.round(260 * difficulty.projectileSpeedMultiplier),
+        trapRadius: Math.round(pullRadius * 0.48),
+        escapeTapGoal: 3 + difficulty.tier + (level.id >= 10 ? 1 : 0),
+      });
+      wormholes.add(oceanHole);
+
+      const aura = this.scene.add.circle(x, y, pullRadius, 0x2f8eff, 0.09);
+      aura.setDepth(2);
+      this.scene.tweens.add({
+        targets: aura,
+        alpha: { from: 0.06, to: 0.2 },
+        duration: 760,
         yoyo: true,
         loop: -1,
       });
@@ -148,6 +234,31 @@ export class SpawnSystem {
       hazards,
       exitGate,
     };
+  }
+
+  private spawnOrbitFoodRule(foods: Phaser.Physics.Arcade.Group, rule: FoodSpawnRule): void {
+    const orbitCount = Math.max(3, rule.count);
+    const baseRadius = Phaser.Math.Clamp(Math.max(28, Math.min(rule.spreadX, rule.spreadY) * 0.55), 28, 96);
+    const carrierRadius = Phaser.Math.Clamp(Math.max(30, Math.max(rule.spreadX, rule.spreadY) * 0.42), 30, 120);
+    const carrierAngularSpeed = Phaser.Math.FloatBetween(0.42, 0.86);
+    const carrierPhase = Phaser.Math.FloatBetween(0, Math.PI * 2);
+
+    for (let i = 0; i < orbitCount; i += 1) {
+      const orbitPhase = (i / orbitCount) * Math.PI * 2 + Phaser.Math.FloatBetween(-0.16, 0.16);
+      const orbitRadius = Phaser.Math.Clamp(baseRadius + Phaser.Math.Between(-9, 9), 24, 104);
+      const x = rule.x + Math.cos(orbitPhase) * orbitRadius;
+      const y = rule.y + Math.sin(orbitPhase) * orbitRadius * 0.82;
+      const item = new FoodItem(this.scene, x, y, rule.foodType, "orbit", {
+        orbitRadius,
+        orbitAngularSpeed: Phaser.Math.FloatBetween(1.35, 2.25),
+        orbitPhase,
+        carrierRadius,
+        carrierAngularSpeed,
+        carrierPhase,
+        carrierAspectY: 0.74,
+      });
+      foods.add(item);
+    }
   }
 
   private spawnHazard(rule: HazardRule): Phaser.Physics.Arcade.Sprite {

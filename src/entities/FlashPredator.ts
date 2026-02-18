@@ -3,6 +3,7 @@ import { DAMAGE } from "../data/balance";
 import { Projectile } from "./Projectile";
 
 export type PredatorShotPattern = "single" | "spread" | "burst";
+export type EnemyDamageSource = "generic" | "glitter" | "bomb" | "bloom" | "projectile" | "shield_pulse";
 
 export interface PredatorConfig {
   speed: number;
@@ -78,7 +79,7 @@ export class FlashPredator extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
-  applyDamage(amount: number): boolean {
+  applyDamage(amount: number, _source: EnemyDamageSource = "generic"): boolean {
     this.hp = Math.max(0, this.hp - amount);
     this.setTint(0xffffff);
     this.scene.time.delayedCall(80, () => this.clearTint());

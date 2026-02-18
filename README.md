@@ -5,8 +5,17 @@ Loopy is a Phaser 3 + TypeScript side-scrolling game with 16 handcrafted levels.
 ## Core Gameplay
 - Play as a flying fish-fairy creature.
 - Eat enough food to hit each level quota.
+- New hunt pattern: rotating food rings ("orbit circles") whose whole center also moves.
 - Reach the exit gate after quota is complete.
 - Avoid flash predators, projectile volleys, wormhole pull zones, and black-hole shots.
+- Watch for newer enemy archetypes:
+  - `Rift Skimmer`: strafes and dive-charges while firing angled shots.
+  - `Arcane Totem`: armored sentry that only takes damage from direct glitter shots.
+  - `Serpent Stalker`: snake-like hunter with a trailing body. Bait it into its own tail to make it self-destruct.
+- You can still use Space-bar combat on serpents (shots/bomb/shield), but tail-trap kills are rewarded.
+- `Ocean Wormhole` hazard: if it grabs you, the HUD prompts a breakaway event.
+  - Escape rule: press `Space` while steering away with arrows/WASD.
+  - You must tap `Space` and move away from its dark center to break free.
 - Manage seeds for checkpoint purchases and lives.
 - Chain Space taps for magical glitter combat combos.
 - Charge and trigger Universe Bloom (`Q`) for screen-clearing power.
@@ -43,6 +52,7 @@ Loopy is a Phaser 3 + TypeScript side-scrolling game with 16 handcrafted levels.
   - Lower shoot intervals (denser bullets).
   - Stronger wormhole pull.
   - Extra predators/wormholes/hazards in later levels.
+  - Moving orbit-food circles appear early, then return later while enemies chase you.
 - Boss:
   - Level 16 Arcane Boss with 3 phases and heavy bullet pressure.
 

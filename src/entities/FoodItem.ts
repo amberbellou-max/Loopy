@@ -10,17 +10,33 @@ const FOOD_TEXTURE: Record<FoodType, string> = {
 
 export class FoodItem extends Phaser.Physics.Arcade.Sprite {
   readonly foodType: FoodType;
-  private readonly movement: "drift" | "hopper" | "swarm" | "static";
+  private readonly movement: "drift" | "hopper" | "swarm" | "static" | "orbit";
   private readonly baseX: number;
   private readonly baseY: number;
   private readonly seed: number;
+  private readonly orbitRadius: number;
+  private readonly orbitAngularSpeed: number;
+  private readonly orbitPhase: number;
+  private readonly carrierRadius: number;
+  private readonly carrierAngularSpeed: number;
+  private readonly carrierPhase: number;
+  private readonly carrierAspectY: number;
 
   constructor(
     scene: Phaser.Scene,
     x: number,
     y: number,
     foodType: FoodType,
-    movement: "drift" | "hopper" | "swarm" | "static",
+    movement: "drift" | "hopper" | "swarm" | "static" | "orbit",
+    movementConfig: {
+      orbitRadius?: number;
+      orbitAngularSpeed?: number;
+      orbitPhase?: number;
+      carrierRadius?: number;
+      carrierAngularSpeed?: number;
+      carrierPhase?: number;
+      carrierAspectY?: number;
+    } = {},
   ) {
     super(scene, x, y, FOOD_TEXTURE[foodType]);
     this.foodType = foodType;
@@ -28,6 +44,13 @@ export class FoodItem extends Phaser.Physics.Arcade.Sprite {
     this.baseX = x;
     this.baseY = y;
     this.seed = Math.random() * Math.PI * 2;
+    this.orbitRadius = movementConfig.orbitRadius ?? Phaser.Math.Between(24, 56);
+    this.orbitAngularSpeed = movementConfig.orbitAngularSpeed ?? Phaser.Math.FloatBetween(1.1, 2);
+    this.orbitPhase = movementConfig.orbitPhase ?? this.seed;
+    this.carrierRadius = movementConfig.carrierRadius ?? Phaser.Math.Between(22, 70);
+    this.carrierAngularSpeed = movementConfig.carrierAngularSpeed ?? Phaser.Math.FloatBetween(0.35, 0.8);
+    this.carrierPhase = movementConfig.carrierPhase ?? this.seed * 0.7;
+    this.carrierAspectY = movementConfig.carrierAspectY ?? 0.74;
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -59,9 +82,18 @@ export class FoodItem extends Phaser.Physics.Arcade.Sprite {
         this.setPosition(this.baseX + offsetX, this.baseY + offsetY);
         break;
       }
+      case "orbit": {
+        const centerX = this.baseX + Math.cos(t * this.carrierAngularSpeed + this.carrierPhase) * this.carrierRadius;
+        const centerY = this.baseY + Math.sin(t * this.carrierAngularSpeed + this.carrierPhase) * this.carrierRadius * this.carrierAspectY;
+        const x = centerX + Math.cos(t * this.orbitAngularSpeed + this.orbitPhase) * this.orbitRadius;
+        const y = centerY + Math.sin(t * this.orbitAngularSpeed + this.orbitPhase) * this.orbitRadius * 0.86;
+        this.setPosition(x, y);
+        break;
+      }
       case "static":
       default: {
         this.setPosition(this.baseX, this.baseY + Math.sin(t * 1.1 + this.seed) * 3);
+        break;
       }
     }
   }

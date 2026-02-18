@@ -11,7 +11,7 @@ export interface FoodSpawnRule {
   count: number;
   spreadX: number;
   spreadY: number;
-  movement: "drift" | "hopper" | "swarm" | "static";
+  movement: "drift" | "hopper" | "swarm" | "static" | "orbit";
 }
 
 export interface PredatorSpawnRule {

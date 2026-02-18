@@ -82,6 +82,10 @@ export interface LevelDebugSnapshot {
   statusWindows: {
     shieldRemainingMs: number;
     bloomRemainingMs: number;
+    oceanTrapActive: boolean;
+    oceanEscapeProgress: number;
+    oceanEscapeGoal: number;
+    oceanEscapeSpaceHits: number;
   };
   freezeDiagnostics: LevelFreezeDiagnostics;
   inputDebug: InputDebugSnapshot;

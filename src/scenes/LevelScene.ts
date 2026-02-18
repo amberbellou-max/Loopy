@@ -6,13 +6,14 @@ import { ArcaneBoss } from "../entities/ArcaneBoss";
 import { FlashPredator } from "../entities/FlashPredator";
 import { FoodItem } from "../entities/FoodItem";
 import { GlitterShot } from "../entities/GlitterShot";
+import { OceanWormhole } from "../entities/OceanWormhole";
 import { PlayerFishFairy } from "../entities/PlayerFishFairy";
 import { Projectile } from "../entities/Projectile";
 import { SeedPickup } from "../entities/SeedPickup";
 import { Wormhole } from "../entities/Wormhole";
 import { AudioSystem } from "../systems/AudioSystem";
 import { GlitterComboSystem, tapsToAction, type GlitterComboAction } from "../systems/glitterCombo";
-import { InputSystem } from "../systems/InputSystem";
+import { InputSystem, type InputSnapshot } from "../systems/InputSystem";
 import { SaveSystem } from "../systems/SaveSystem";
 import { SpawnSystem } from "../systems/SpawnSystem";
 import { checkpointSeedCost, getDifficultyParams, scaleQuota, scaleTimeLimit, type DifficultyParams } from "../systems/difficulty";
@@ -95,6 +96,11 @@ export class LevelScene extends Phaser.Scene {
   private lastResolvedSpaceActionAt = 0;
   private lastBlockedSpaceActionReason: string | null = null;
   private lastBlockedSpaceActionAt = 0;
+  private oceanTrapWormhole: OceanWormhole | null = null;
+  private oceanEscapeProgress = 0;
+  private oceanEscapeGoal = 0;
+  private oceanEscapeSpaceHits = 0;
+  private nextOceanTrapHintAt = 0;
   private debugMaxDeltaMs = 0;
   private debugLongFrameCount = 0;
   private debugUpdateCount = 0;
@@ -149,6 +155,11 @@ export class LevelScene extends Phaser.Scene {
     this.lastResolvedSpaceActionAt = 0;
     this.lastBlockedSpaceActionReason = null;
     this.lastBlockedSpaceActionAt = 0;
+    this.oceanTrapWormhole = null;
+    this.oceanEscapeProgress = 0;
+    this.oceanEscapeGoal = 0;
+    this.oceanEscapeSpaceHits = 0;
+    this.nextOceanTrapHintAt = 0;
     this.debugMaxDeltaMs = 0;
     this.debugLongFrameCount = 0;
     this.debugUpdateCount = 0;
@@ -192,8 +203,10 @@ export class LevelScene extends Phaser.Scene {
     this.player.setUnlockedAbilities(getUnlockedAbilities(Math.max(this.level.id, save.highestUnlockedLevel)));
 
     this.bindOverlaps();
+    this.events.on("SNAKE_TAIL_BITE", this.handleSnakeTailBite, this);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.events.off("SNAKE_TAIL_BITE", this.handleSnakeTailBite, this);
       this.inputSystem.destroy();
       this.audioSystem.destroy();
       this.hud.destroy();
@@ -289,6 +302,8 @@ export class LevelScene extends Phaser.Scene {
       hole.pullTarget(this.player, deltaSec);
       return true;
     });
+
+    this.updateOceanWormholeTrap(input, deltaSec, time);
 
     if (!this.bossSpawned) {
       this.trySpawnBoss();
@@ -428,6 +443,10 @@ export class LevelScene extends Phaser.Scene {
       statusWindows: {
         shieldRemainingMs: Math.max(0, this.shieldUntil - now),
         bloomRemainingMs: Math.max(0, this.bloomActiveUntil - now),
+        oceanTrapActive: Boolean(this.oceanTrapWormhole && this.oceanTrapWormhole.active),
+        oceanEscapeProgress: this.oceanEscapeProgress,
+        oceanEscapeGoal: this.oceanEscapeGoal,
+        oceanEscapeSpaceHits: this.oceanEscapeSpaceHits,
       },
       freezeDiagnostics: {
         maxDeltaMs: this.debugMaxDeltaMs,
@@ -479,7 +498,7 @@ export class LevelScene extends Phaser.Scene {
     this.physics.add.overlap(this.glitterShots, this.predators, (shotObj, predatorObj) => {
       const shot = shotObj as GlitterShot;
       const predator = predatorObj as FlashPredator;
-      const dead = predator.applyDamage(shot.damage);
+      const dead = predator.applyDamage(shot.damage, "glitter");
       if (dead) {
         this.seedCount += 2;
       }
@@ -506,9 +525,112 @@ export class LevelScene extends Phaser.Scene {
         return;
       }
       const predator = predatorObj as FlashPredator;
-      predator.applyDamage(Math.max(20, projectile.damage));
+      predator.applyDamage(Math.max(20, projectile.damage), "projectile");
       projectile.destroy();
     });
+  }
+
+  private updateOceanWormholeTrap(input: InputSnapshot, deltaSec: number, time: number): void {
+    if (!this.oceanTrapWormhole || !this.oceanTrapWormhole.active) {
+      const candidate = this.findOceanTrapCandidate(time);
+      if (candidate) {
+        this.oceanTrapWormhole = candidate;
+        this.oceanEscapeProgress = 0;
+        this.oceanEscapeGoal = Math.max(3, candidate.getEscapeTapGoal());
+        this.oceanEscapeSpaceHits = 0;
+        this.nextOceanTrapHintAt = time;
+        this.hud.flashCheckpoint("Ocean Wormhole! SPACE + move away");
+      }
+    }
+
+    const hole = this.oceanTrapWormhole;
+    if (!hole || !hole.active) {
+      return;
+    }
+
+    const body = this.player.body as Phaser.Physics.Arcade.Body | null;
+    if (!body) {
+      return;
+    }
+
+    const dx = this.player.x - hole.x;
+    const dy = this.player.y - hole.y;
+    const distance = Math.max(1, Math.hypot(dx, dy));
+    const awayX = dx / distance;
+    const awayY = dy / distance;
+    const trapRadius = hole.getTrapRadius();
+
+    const inwardPull = hole.pullStrength * (0.9 + Phaser.Math.Clamp(1 - distance / Math.max(trapRadius, 1), 0.15, 1) * 1.8);
+    body.velocity.x += -awayX * inwardPull * deltaSec;
+    body.velocity.y += -awayY * inwardPull * deltaSec;
+
+    const awayInput = Math.max(0, input.moveX * awayX + input.moveY * awayY);
+    this.oceanEscapeProgress = Math.max(0, this.oceanEscapeProgress - deltaSec * 0.18);
+    this.oceanEscapeProgress += awayInput * deltaSec * 1.6;
+
+    if (input.spaceTapped) {
+      this.oceanEscapeSpaceHits += 1;
+      this.oceanEscapeProgress += 1;
+      body.velocity.x += awayX * 220;
+      body.velocity.y += awayY * 220;
+    }
+
+    if (time >= this.nextOceanTrapHintAt) {
+      const percent = this.oceanEscapeGoal > 0 ? Math.min(100, Math.round((this.oceanEscapeProgress / this.oceanEscapeGoal) * 100)) : 0;
+      const tapsNeeded = Math.max(0, 2 - this.oceanEscapeSpaceHits);
+      this.hud.flashCheckpoint(tapsNeeded > 0 ? `Tap SPACE x${tapsNeeded} + move away` : `Escape pull: ${percent}%`);
+      this.nextOceanTrapHintAt = time + 560;
+    }
+
+    if (this.oceanEscapeSpaceHits >= 2 && this.oceanEscapeProgress >= this.oceanEscapeGoal && distance >= trapRadius * 0.84) {
+      body.velocity.x += awayX * 160;
+      body.velocity.y += awayY * 160;
+      this.releaseOceanTrap(time, true);
+      return;
+    }
+
+    if (distance < 16) {
+      this.releaseOceanTrap(time, false);
+      this.applyPlayerDamage(DAMAGE.wormholeCoreReset);
+    }
+  }
+
+  private releaseOceanTrap(time: number, escaped: boolean): void {
+    if (!this.oceanTrapWormhole) {
+      return;
+    }
+
+    this.oceanTrapWormhole.markTrapReleased(time);
+    this.oceanTrapWormhole = null;
+    this.oceanEscapeProgress = 0;
+    this.oceanEscapeGoal = 0;
+    this.oceanEscapeSpaceHits = 0;
+    this.nextOceanTrapHintAt = time + 420;
+
+    if (escaped) {
+      this.hud.flashCheckpoint("Escaped ocean pull!");
+    }
+  }
+
+  private findOceanTrapCandidate(time: number): OceanWormhole | null {
+    let candidate: OceanWormhole | null = null;
+    let bestDistance = Number.POSITIVE_INFINITY;
+
+    this.wormholes.children.each((entry) => {
+      const hole = entry as Wormhole;
+      if (!(hole instanceof OceanWormhole) || !hole.active || !hole.canTrap(this.player, time)) {
+        return true;
+      }
+
+      const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, hole.x, hole.y);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        candidate = hole;
+      }
+      return true;
+    });
+
+    return candidate;
   }
 
   private executeComboAction(action: GlitterComboAction, time: number): void {
@@ -725,7 +847,7 @@ export class LevelScene extends Phaser.Scene {
         const dx = predator.x - x;
         const dy = predator.y - y;
         const len = Math.max(1, Math.hypot(dx, dy));
-        const dead = predator.applyDamage(damage);
+        const dead = predator.applyDamage(damage, "bomb");
         if (!dead && predator.active) {
           predator.setVelocity((dx / len) * 330, (dy / len) * 330);
         }
@@ -807,7 +929,7 @@ export class LevelScene extends Phaser.Scene {
     this.predators.children.each((entry) => {
       const predator = entry as FlashPredator;
       predator.stun(2200, time);
-      predator.applyDamage(24);
+      predator.applyDamage(24, "bloom");
       return true;
     });
 
@@ -927,6 +1049,7 @@ export class LevelScene extends Phaser.Scene {
     if (this.player.health <= 0 || amount >= DAMAGE.wormholeCoreReset) {
       this.livesRemaining -= 1;
       this.deaths += 1;
+      this.releaseOceanTrap(now, false);
 
       if (this.livesRemaining <= 0) {
         this.handleGameOver("Out of lives");
@@ -1085,7 +1208,7 @@ export class LevelScene extends Phaser.Scene {
       const predator = entry as FlashPredator;
       if (Phaser.Math.Distance.Between(this.player.x, this.player.y, predator.x, predator.y) <= radius + 16) {
         predator.stun(260, time);
-        predator.applyDamage(6);
+        predator.applyDamage(6, "shield_pulse");
       }
       return true;
     });
@@ -1209,6 +1332,24 @@ export class LevelScene extends Phaser.Scene {
       } else {
         this.scene.start("WorldMapScene", { selectedLevel: Math.min(16, this.level.id + 1) });
       }
+    });
+  }
+
+  private handleSnakeTailBite(payload: { x: number; y: number }): void {
+    this.seedCount += 5;
+    this.bloomMeter = Math.min(100, this.bloomMeter + 10);
+    this.hud.flashCheckpoint("Snake ate its tail! +5 seeds");
+    this.audioSystem.playAbility();
+    this.cameras.main.shake(120, 0.0046);
+
+    const burst = this.add.circle(payload.x, payload.y, 14, 0x9eff7a, 0.24);
+    burst.setDepth(20);
+    this.tweens.add({
+      targets: burst,
+      radius: 86,
+      alpha: 0,
+      duration: 360,
+      onComplete: () => burst.destroy(),
     });
   }
 

@@ -96,6 +96,65 @@ export class PreloadScene extends Phaser.Scene {
       1: "#ffd2b1",
     });
 
+    this.drawPixelTexture("enemy_rift_skimmer", [
+      "...tt...",
+      "..t22t..",
+      ".t2222t.",
+      "t22ff22t",
+      "tt2ff2tt",
+      ".tt22tt.",
+      "..t..t..",
+      ".t....t.",
+    ], {
+      t: "#46a2ff",
+      2: "#b3ecff",
+      f: "#f2fbff",
+    });
+
+    this.drawPixelTexture("enemy_arcane_totem", [
+      "...uu...",
+      "..u44u..",
+      ".u4aa4u.",
+      "u4a11a4u",
+      "u4a11a4u",
+      ".u4aa4u.",
+      "..u44u..",
+      "...uu...",
+    ], {
+      u: "#6c57ff",
+      4: "#c9b8ff",
+      a: "#f3f0ff",
+      1: "#15203b",
+    });
+
+    this.drawPixelTexture("enemy_snake_head", [
+      "..ssss..",
+      ".s7777s.",
+      "s77dd77s",
+      "s7d11d7s",
+      "s7d11d7s",
+      "s77dd77s",
+      ".s7777s.",
+      "..ssss..",
+    ], {
+      s: "#57cd66",
+      7: "#bcff8c",
+      d: "#2f7f3b",
+      1: "#17211a",
+    });
+
+    this.drawPixelTexture("enemy_snake_segment", [
+      "..gg..",
+      ".g88g.",
+      "g8888g",
+      "g8888g",
+      ".g88g.",
+      "..gg..",
+    ], {
+      g: "#3aaa4c",
+      8: "#9eff7a",
+    });
+
     this.drawPixelTexture("wormhole_core", [
       "...pp...",
       "..p22p..",
@@ -109,6 +168,22 @@ export class PreloadScene extends Phaser.Scene {
       p: "#5f3cff",
       2: "#9a7aff",
       a: "#0d0a1f",
+    });
+
+    this.drawPixelTexture("wormhole_ocean_core", [
+      "..qqqq..",
+      ".q7777q.",
+      "q77kk77q",
+      "q7k00k7q",
+      "q7k00k7q",
+      "q77kk77q",
+      ".q7777q.",
+      "..qqqq..",
+    ], {
+      q: "#2f8cff",
+      7: "#7ddcff",
+      k: "#17314e",
+      0: "#050910",
     });
 
     this.drawPixelTexture("projectile_enemy", [
