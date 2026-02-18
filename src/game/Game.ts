@@ -9,9 +9,13 @@ import { PreloadScene } from "../scenes/PreloadScene";
 import { VictoryScene } from "../scenes/VictoryScene";
 import { WorldMapScene } from "../scenes/WorldMapScene";
 
-export function createGame(parent: string): Phaser.Game {
+interface CreateGameOptions {
+  forceCanvas?: boolean;
+}
+
+export function createGame(parent: string, options: CreateGameOptions = {}): Phaser.Game {
   return new Phaser.Game({
-    type: Phaser.AUTO,
+    type: options.forceCanvas ? Phaser.CANVAS : Phaser.AUTO,
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
     parent,

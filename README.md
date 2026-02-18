@@ -57,6 +57,30 @@ Loopy is a Phaser 3 + TypeScript side-scrolling game with 16 handcrafted levels.
 4. Run unit tests: `npm run test`.
 5. Run E2E tests: `npm run test:e2e`.
 
+## E2E Debug Hooks
+- Hooks are enabled only in `?e2e=1` mode.
+- Query params:
+  - `?e2e=1`
+  - `?e2e=1&autolevel=8`
+  - `?e2e=1&autolevel=16`
+- Exposed globals in E2E mode:
+  - `window.advanceTime(ms)`: deterministic fixed-step game stepping at 60 FPS.
+  - `window.render_game_to_text()`: concise JSON text snapshot of active game state.
+
+## Stress Loop Commands
+1. Export skill paths:
+   - `export CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"`
+   - `export WEB_GAME_CLIENT="$CODEX_HOME/skills/develop-web-game/scripts/web_game_playwright_client.js"`
+   - `export WEB_GAME_ACTIONS="$CODEX_HOME/skills/develop-web-game/references/action_payloads.json"`
+2. Start dev server:
+   - `npm run dev -- --host 127.0.0.1 --port 5173`
+3. Level 8 Space stress:
+   - `node "$WEB_GAME_CLIENT" --url "http://127.0.0.1:5173/?e2e=1&autolevel=8" --actions-file "/Users/abelsanchez/Documents/GAMES/Loopy/tests/playwright-actions/space-stress-level8.json" --iterations 8 --pause-ms 300 --screenshot-dir "/Users/abelsanchez/Documents/GAMES/Loopy/output/web-game/l8"`
+4. Level 16 Space stress:
+   - `node "$WEB_GAME_CLIENT" --url "http://127.0.0.1:5173/?e2e=1&autolevel=16" --actions-file "/Users/abelsanchez/Documents/GAMES/Loopy/tests/playwright-actions/space-stress-level16.json" --iterations 10 --pause-ms 350 --screenshot-dir "/Users/abelsanchez/Documents/GAMES/Loopy/output/web-game/l16"`
+5. Combo verification:
+   - `node "$WEB_GAME_CLIENT" --url "http://127.0.0.1:5173/?e2e=1&autolevel=8" --actions-file "/Users/abelsanchez/Documents/GAMES/Loopy/tests/playwright-actions/space-combo-check.json" --iterations 4 --pause-ms 250 --screenshot-dir "/Users/abelsanchez/Documents/GAMES/Loopy/output/web-game/combo"`
+
 ## Project Layout
 - `src/scenes`: Phaser scene flow and level runtime.
 - `src/entities`: game entities (player, predators, wormholes, projectiles, foods).

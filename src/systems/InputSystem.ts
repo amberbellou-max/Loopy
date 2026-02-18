@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import type { InputDebugSnapshot } from "../types/debugTypes";
 
 export interface InputSnapshot {
   moveX: number;
@@ -49,6 +50,11 @@ export class InputSystem {
   private touchBloomPressedFrame = false;
   private touchControlsEl: HTMLElement | null = null;
   private keyboardSpaceWasDown = false;
+  private debugReadCount = 0;
+  private debugSpaceTapCount = 0;
+  private debugSpaceDownTransitions = 0;
+  private debugSpaceUpTransitions = 0;
+  private debugTouchAbilityTapCount = 0;
 
   constructor(scene: Phaser.Scene) {
     const keyboard = scene.input.keyboard;
@@ -85,12 +91,19 @@ export class InputSystem {
   }
 
   read(): InputSnapshot {
+    this.debugReadCount += 1;
+
     const left = this.isDown(this.cursors.left) || this.isDown(this.keys.a) || this.touchState.left;
     const right = this.isDown(this.cursors.right) || this.isDown(this.keys.d) || this.touchState.right;
     const up = this.isDown(this.cursors.up) || this.isDown(this.keys.w) || this.touchState.up;
     const down = this.isDown(this.cursors.down) || this.isDown(this.keys.s) || this.touchState.down;
 
     const keyboardSpaceDown = this.isDown(this.keys.space);
+    if (keyboardSpaceDown && !this.keyboardSpaceWasDown) {
+      this.debugSpaceDownTransitions += 1;
+    } else if (!keyboardSpaceDown && this.keyboardSpaceWasDown) {
+      this.debugSpaceUpTransitions += 1;
+    }
     const spaceTappedKeyboard = keyboardSpaceDown && !this.keyboardSpaceWasDown;
     this.keyboardSpaceWasDown = keyboardSpaceDown;
     const dashPressedKeyboard = Phaser.Input.Keyboard.JustDown(this.keys.shift);
@@ -110,6 +123,10 @@ export class InputSystem {
       pausePressed,
     };
 
+    if (snapshot.spaceTapped) {
+      this.debugSpaceTapCount += 1;
+    }
+
     this.touchAbilityPressedFrame = false;
     this.touchDashPressedFrame = false;
     this.touchBloomPressedFrame = false;
@@ -122,6 +139,18 @@ export class InputSystem {
       this.touchControlsEl.parentElement.removeChild(this.touchControlsEl);
     }
     this.touchControlsEl = null;
+  }
+
+  getDebugSnapshot(): InputDebugSnapshot {
+    return {
+      readCount: this.debugReadCount,
+      keyboardSpaceWasDown: this.keyboardSpaceWasDown,
+      spaceTapCount: this.debugSpaceTapCount,
+      spaceDownTransitions: this.debugSpaceDownTransitions,
+      spaceUpTransitions: this.debugSpaceUpTransitions,
+      touchAbilityTapCount: this.debugTouchAbilityTapCount,
+      touchAbilityHeld: this.touchState.ability,
+    };
   }
 
   private isDown(key: Phaser.Input.Keyboard.Key | undefined): boolean {
@@ -167,6 +196,7 @@ export class InputSystem {
       this.touchState[key] = true;
       if (actionButton && key === "ability") {
         this.touchAbilityPressedFrame = true;
+        this.debugTouchAbilityTapCount += 1;
       }
       if (actionButton && key === "dash") {
         this.touchDashPressedFrame = true;

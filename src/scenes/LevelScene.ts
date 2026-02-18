@@ -18,6 +18,7 @@ import { SpawnSystem } from "../systems/SpawnSystem";
 import { checkpointSeedCost, getDifficultyParams, scaleQuota, scaleTimeLimit, type DifficultyParams } from "../systems/difficulty";
 import type { LevelDefinition } from "../types/gameTypes";
 import { GAME_EVENTS } from "../types/gameTypes";
+import type { LevelDebugSnapshot } from "../types/debugTypes";
 import { HUD } from "../ui/HUD";
 
 interface LevelSceneData {
@@ -90,6 +91,15 @@ export class LevelScene extends Phaser.Scene {
   private shotFlashIntervalMs = 65;
   private maxEnemyProjectiles = 150;
   private maxGlitterShots = 90;
+  private lastResolvedSpaceAction: GlitterComboAction | null = null;
+  private lastResolvedSpaceActionAt = 0;
+  private lastBlockedSpaceActionReason: string | null = null;
+  private lastBlockedSpaceActionAt = 0;
+  private debugMaxDeltaMs = 0;
+  private debugLongFrameCount = 0;
+  private debugUpdateCount = 0;
+  private debugConsecutiveStallFrames = 0;
+  private debugWorstConsecutiveStallFrames = 0;
 
   private timeLeftSec: number | null = null;
 
@@ -135,6 +145,15 @@ export class LevelScene extends Phaser.Scene {
     this.holdShotIntervalMs = Phaser.Math.Clamp(180 - this.level.id * 5, 95, 150);
     this.maxEnemyProjectiles = Phaser.Math.Clamp(90 + this.level.id * 4, 105, 160);
     this.maxGlitterShots = Phaser.Math.Clamp(60 + this.level.id * 2, 74, 112);
+    this.lastResolvedSpaceAction = null;
+    this.lastResolvedSpaceActionAt = 0;
+    this.lastBlockedSpaceActionReason = null;
+    this.lastBlockedSpaceActionAt = 0;
+    this.debugMaxDeltaMs = 0;
+    this.debugLongFrameCount = 0;
+    this.debugUpdateCount = 0;
+    this.debugConsecutiveStallFrames = 0;
+    this.debugWorstConsecutiveStallFrames = 0;
 
     this.boss = null;
     this.bossSpawned = false;
@@ -196,6 +215,18 @@ export class LevelScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     if (this.completed) {
       return;
+    }
+
+    this.debugUpdateCount += 1;
+    this.debugMaxDeltaMs = Math.max(this.debugMaxDeltaMs, delta);
+    if (delta >= 34) {
+      this.debugLongFrameCount += 1;
+    }
+    if (delta >= 120) {
+      this.debugConsecutiveStallFrames += 1;
+      this.debugWorstConsecutiveStallFrames = Math.max(this.debugWorstConsecutiveStallFrames, this.debugConsecutiveStallFrames);
+    } else {
+      this.debugConsecutiveStallFrames = 0;
     }
 
     const deltaSec = delta / 1000;
@@ -318,6 +349,99 @@ export class LevelScene extends Phaser.Scene {
     }
   }
 
+  getDebugSnapshot(): LevelDebugSnapshot {
+    const now = this.time.now;
+    const body = this.player.body as Phaser.Physics.Arcade.Body | null;
+
+    let projectilesEnemy = 0;
+    let projectilesPlayer = 0;
+    this.projectiles.children.each((entry) => {
+      const projectile = entry as Projectile;
+      if (!projectile.active) {
+        return true;
+      }
+      if (projectile.owner === "enemy") {
+        projectilesEnemy += 1;
+      } else {
+        projectilesPlayer += 1;
+      }
+      return true;
+    });
+
+    const longFrameRatio = this.debugUpdateCount > 0 ? this.debugLongFrameCount / this.debugUpdateCount : 0;
+    const sustainedStallDetected = this.debugWorstConsecutiveStallFrames >= 4 || longFrameRatio >= 0.35;
+
+    return {
+      coordinateSystem: "origin top-left, +x right, +y down",
+      scene: "LevelScene",
+      levelId: this.level.id,
+      nowMs: now,
+      completed: this.completed,
+      player: {
+        x: this.player.x,
+        y: this.player.y,
+        velocityX: body?.velocity.x ?? 0,
+        velocityY: body?.velocity.y ?? 0,
+        facingDirection: this.player.getFacingDirection(),
+        health: this.player.health,
+        maxHealth: this.player.maxHealth,
+      },
+      objective: {
+        collected: this.collected,
+        quota: this.effectiveQuota,
+        timeLeftSec: this.timeLeftSec,
+      },
+      economy: {
+        livesRemaining: this.livesRemaining,
+        seedCount: this.seedCount,
+        universeSeedCount: this.universeSeedCount,
+        bloomMeter: this.bloomMeter,
+        checkpointCost: this.checkpointCost,
+        checkpointCursor: this.checkpointCursor,
+        currentCheckpoint: {
+          x: this.currentCheckpoint.x,
+          y: this.currentCheckpoint.y,
+        },
+      },
+      spaceCombat: {
+        pendingComboTaps: this.comboSystem.getPendingTapCount(now),
+        lastResolvedAction: this.lastResolvedSpaceAction,
+        lastResolvedActionAt: this.lastResolvedSpaceActionAt,
+        lastBlockedReason: this.lastBlockedSpaceActionReason,
+        lastBlockedAt: this.lastBlockedSpaceActionAt,
+        holdShotIntervalMs: this.holdShotIntervalMs,
+        nextHoldShotInMs: Math.max(0, this.nextHoldShotAt - now),
+      },
+      entities: {
+        foods: this.foods.countActive(true),
+        predators: this.predators.countActive(true),
+        wormholes: this.wormholes.countActive(true),
+        projectilesEnemy,
+        projectilesPlayer,
+        projectilesTotal: projectilesEnemy + projectilesPlayer,
+        glitterShots: this.glitterShots.countActive(true),
+        pickups: this.pickups.countActive(true),
+        bossAlive: Boolean(this.boss && this.boss.isAlive()),
+        bossHpRatio: this.boss && this.boss.isAlive() ? this.boss.getHpRatio() : null,
+        bossPhase: this.boss && this.boss.isAlive() ? this.boss.getPhase() : null,
+      },
+      statusWindows: {
+        shieldRemainingMs: Math.max(0, this.shieldUntil - now),
+        bloomRemainingMs: Math.max(0, this.bloomActiveUntil - now),
+      },
+      freezeDiagnostics: {
+        maxDeltaMs: this.debugMaxDeltaMs,
+        longFrameCount: this.debugLongFrameCount,
+        updateCount: this.debugUpdateCount,
+        consecutiveStallFrames: this.debugConsecutiveStallFrames,
+        worstConsecutiveStallFrames: this.debugWorstConsecutiveStallFrames,
+        sustainedStallDetected,
+      },
+      inputDebug: this.inputSystem.getDebugSnapshot(),
+      audioDebug: this.audioSystem.getDebugSnapshot(),
+    };
+  }
+
   private bindOverlaps(): void {
     this.physics.add.overlap(this.player, this.foods, (_, target) => {
       const food = target as FoodItem;
@@ -390,16 +514,23 @@ export class LevelScene extends Phaser.Scene {
   private executeComboAction(action: GlitterComboAction, time: number): void {
     if (action === "shot") {
       if (time < this.nextTapShotAt) {
+        this.lastBlockedSpaceActionReason = "shot_cooldown";
+        this.lastBlockedSpaceActionAt = time;
         return;
       }
       this.nextTapShotAt = time + 80;
       this.fireGlitterShot();
       this.audioSystem.playGlitterShot();
+      this.lastResolvedSpaceAction = "shot";
+      this.lastResolvedSpaceActionAt = time;
+      this.lastBlockedSpaceActionReason = null;
       return;
     }
 
     if (action === "bomb") {
       if (time < this.nextBombAt) {
+        this.lastBlockedSpaceActionReason = "bomb_cooldown";
+        this.lastBlockedSpaceActionAt = time;
         this.flashCombatHint("Bomb recharging", time);
         return;
       }
@@ -408,10 +539,15 @@ export class LevelScene extends Phaser.Scene {
       this.hud.flashCheckpoint("Glitter Bomb");
       this.audioSystem.playAbility();
       this.cameras.main.shake(110, 0.0042);
+      this.lastResolvedSpaceAction = "bomb";
+      this.lastResolvedSpaceActionAt = time;
+      this.lastBlockedSpaceActionReason = null;
       return;
     }
 
     if (time < this.nextShieldCastAt) {
+      this.lastBlockedSpaceActionReason = "shield_cooldown";
+      this.lastBlockedSpaceActionAt = time;
       this.flashCombatHint("Shield recharging", time);
       return;
     }
@@ -419,6 +555,9 @@ export class LevelScene extends Phaser.Scene {
     this.activateShield(time);
     this.audioSystem.playAbility();
     this.cameras.main.shake(70, 0.0024);
+    this.lastResolvedSpaceAction = "shield";
+    this.lastResolvedSpaceActionAt = time;
+    this.lastBlockedSpaceActionReason = null;
   }
 
   private flashCombatHint(label: string, time: number): void {
@@ -583,11 +722,13 @@ export class LevelScene extends Phaser.Scene {
       const distance = Phaser.Math.Distance.Between(x, y, predator.x, predator.y);
       if (distance <= radius + 30) {
         predator.stun(stunMs, time);
-        predator.applyDamage(damage);
         const dx = predator.x - x;
         const dy = predator.y - y;
         const len = Math.max(1, Math.hypot(dx, dy));
-        predator.setVelocity((dx / len) * 330, (dy / len) * 330);
+        const dead = predator.applyDamage(damage);
+        if (!dead && predator.active) {
+          predator.setVelocity((dx / len) * 330, (dy / len) * 330);
+        }
       }
       return true;
     });

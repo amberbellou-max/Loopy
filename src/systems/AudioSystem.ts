@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import type { Biome } from "../types/gameTypes";
+import type { AudioDebugSnapshot } from "../types/debugTypes";
 
 export class AudioSystem {
   private readonly scene: Phaser.Scene;
@@ -11,6 +12,8 @@ export class AudioSystem {
   private readonly maxVoices = 32;
   private lastAbilityAt = 0;
   private lastGlitterShotAt = 0;
+  private droppedToneCount = 0;
+  private lastDroppedToneAt = 0;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -90,6 +93,17 @@ export class AudioSystem {
     this.stopMusic();
   }
 
+  getDebugSnapshot(): AudioDebugSnapshot {
+    return {
+      activeVoices: this.activeVoices,
+      maxVoices: this.maxVoices,
+      droppedToneCount: this.droppedToneCount,
+      lastDroppedToneAt: this.lastDroppedToneAt,
+      lastAbilityAt: this.lastAbilityAt,
+      lastGlitterShotAt: this.lastGlitterShotAt,
+    };
+  }
+
   private ensureContext(): AudioContext | null {
     if (typeof window === "undefined") {
       return null;
@@ -113,6 +127,8 @@ export class AudioSystem {
       return;
     }
     if (this.activeVoices >= this.maxVoices) {
+      this.droppedToneCount += 1;
+      this.lastDroppedToneAt = this.scene.time.now;
       return;
     }
 
