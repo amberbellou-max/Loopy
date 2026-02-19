@@ -1,4 +1,5 @@
 import type { SaveData } from "../types/gameTypes";
+import { MAX_LEVEL_ID } from "../data/levels";
 
 const SAVE_KEY = "loopy_save_v1";
 
@@ -24,7 +25,7 @@ function sanitizeSaveData(value: unknown): SaveData {
   const candidate = value as Partial<SaveData>;
   const highestUnlockedLevel = Number(candidate.highestUnlockedLevel ?? DEFAULT_SAVE.highestUnlockedLevel);
   const safeHighestUnlocked = Number.isFinite(highestUnlockedLevel)
-    ? Math.min(16, Math.max(1, Math.floor(highestUnlockedLevel)))
+    ? Math.min(MAX_LEVEL_ID, Math.max(1, Math.floor(highestUnlockedLevel)))
     : DEFAULT_SAVE.highestUnlockedLevel;
 
   const rawScores = candidate.levelBestScores;
@@ -33,7 +34,7 @@ function sanitizeSaveData(value: unknown): SaveData {
     for (const [key, score] of Object.entries(rawScores)) {
       const level = Number(key);
       const valueScore = Number(score);
-      if (Number.isInteger(level) && level >= 1 && level <= 16 && Number.isFinite(valueScore) && valueScore >= 0) {
+      if (Number.isInteger(level) && level >= 1 && level <= MAX_LEVEL_ID && Number.isFinite(valueScore) && valueScore >= 0) {
         levelBestScores[level] = Math.floor(valueScore);
       }
     }
@@ -107,7 +108,7 @@ export class SaveSystem {
     economy?: { seedsEarned?: number; universeSeedsEarned?: number; bloomsCast?: number },
   ): SaveData {
     const existing = SaveSystem.load();
-    existing.highestUnlockedLevel = Math.max(existing.highestUnlockedLevel, Math.min(16, levelId + 1));
+    existing.highestUnlockedLevel = Math.max(existing.highestUnlockedLevel, Math.min(MAX_LEVEL_ID, levelId + 1));
     const best = existing.levelBestScores[levelId] ?? 0;
     existing.levelBestScores[levelId] = Math.max(best, Math.floor(score));
     existing.totals.seeds += Math.max(0, Math.floor(economy?.seedsEarned ?? 0));

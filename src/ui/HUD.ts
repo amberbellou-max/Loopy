@@ -14,6 +14,7 @@ export class HUD {
   private readonly bloomText: Phaser.GameObjects.Text;
   private readonly comboText: Phaser.GameObjects.Text;
   private readonly checkpointCostText: Phaser.GameObjects.Text;
+  private readonly specialsText: Phaser.GameObjects.Text;
 
   private readonly bossBarBg: Phaser.GameObjects.Rectangle;
   private readonly bossBarFill: Phaser.GameObjects.Rectangle;
@@ -70,6 +71,14 @@ export class HUD {
     });
     this.checkpointCostText.setOrigin(1, 0);
 
+    this.specialsText = scene.add.text(scene.scale.width - margin, margin + 66, "Burst Charges: 0/0", {
+      color: "#b8f3ff",
+      fontSize: "16px",
+      stroke: "#03170f",
+      strokeThickness: 3,
+    });
+    this.specialsText.setOrigin(1, 0);
+
     this.checkpointText = scene.add.text(scene.scale.width * 0.5, margin + 14, "", {
       color: "#9dffdf",
       fontSize: "22px",
@@ -99,6 +108,7 @@ export class HUD {
       this.bloomText,
       this.comboText,
       this.checkpointCostText,
+      this.specialsText,
       this.checkpointText,
       this.bossBarBg,
       this.bossBarFill,
@@ -149,6 +159,11 @@ export class HUD {
     this.checkpointCostText.setText(`Checkpoint: ${cost} seeds`);
   }
 
+  updateSpecials(remaining: number, max: number): void {
+    this.specialsText.setText(`Burst Charges: ${remaining}/${max}`);
+    this.specialsText.setColor(remaining <= 0 ? "#ffb6b6" : remaining <= 1 ? "#ffe8a6" : "#b8f3ff");
+  }
+
   updateBoss(visible: boolean, hpRatio: number, phase: number): void {
     this.bossBarBg.setVisible(visible);
     this.bossBarFill.setVisible(visible);
@@ -185,6 +200,7 @@ export class HUD {
     this.bloomText.destroy();
     this.comboText.destroy();
     this.checkpointCostText.destroy();
+    this.specialsText.destroy();
     this.checkpointText.destroy();
     this.bossBarBg.destroy();
     this.bossBarFill.destroy();

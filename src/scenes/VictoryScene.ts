@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { MAX_LEVEL_ID } from "../data/levels";
 
 interface VictoryData {
   totalScore: number;
@@ -13,7 +14,7 @@ export class VictoryScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.add
-      .text(width * 0.5, 130, "You Cleared All 16 Levels", {
+      .text(width * 0.5, 130, `You Cleared All ${MAX_LEVEL_ID} Levels`, {
         fontSize: "56px",
         fontStyle: "bold",
         color: "#ddffef",
@@ -35,7 +36,7 @@ export class VictoryScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const map = this.makeButton(width * 0.5, height * 0.5 + 70, "World Map", () => {
-      this.scene.start("WorldMapScene", { selectedLevel: 16 });
+      this.scene.start("WorldMapScene", { selectedLevel: MAX_LEVEL_ID });
     });
 
     const menu = this.makeButton(width * 0.5, height * 0.5 + 145, "Main Menu", () => {

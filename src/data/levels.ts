@@ -3,6 +3,7 @@ import type {
   HazardRule,
   LevelDefinition,
   PredatorSpawnRule,
+  SeedFountainGhostRule,
   WormholeRule,
 } from "../types/gameTypes";
 
@@ -74,6 +75,20 @@ const hazard = (
   damage,
 });
 
+const seedGhost = (
+  triggerX: number,
+  x: number,
+  y: number,
+  rewardSeeds: SeedFountainGhostRule["rewardSeeds"],
+  visibleMs = 2000,
+): SeedFountainGhostRule => ({
+  triggerX,
+  x,
+  y,
+  rewardSeeds,
+  visibleMs,
+});
+
 export const LEVELS: LevelDefinition[] = [
   {
     id: 1,
@@ -114,6 +129,9 @@ export const LEVELS: LevelDefinition[] = [
     hazards: [
       hazard("vine", 1420, 560, 140, 30, 15),
       hazard("vine", 2380, 560, 130, 30, 16),
+    ],
+    seedFountainGhosts: [
+      seedGhost(930, 980, 300, 3, 2100),
     ],
     milestone: false,
   },
@@ -160,6 +178,10 @@ export const LEVELS: LevelDefinition[] = [
       hazard("vine", 1880, 560, 170, 35, 16),
       hazard("vine", 2790, 560, 170, 35, 16),
       hazard("vine", 3130, 560, 130, 32, 17),
+    ],
+    seedFountainGhosts: [
+      seedGhost(1220, 1280, 260, 3, 1900),
+      seedGhost(2460, 2540, 280, 6, 1700),
     ],
     milestone: true,
     unlocksAbility: "dash",
@@ -217,6 +239,10 @@ export const LEVELS: LevelDefinition[] = [
     hazards: [
       hazard("vine", 2920, 560, 170, 35, 18),
       hazard("vine", 3460, 560, 140, 34, 19),
+    ],
+    seedFountainGhosts: [
+      seedGhost(1460, 1520, 270, 3, 1800),
+      seedGhost(2860, 2920, 250, 6, 1700),
     ],
     milestone: false,
   },
@@ -294,6 +320,10 @@ export const LEVELS: LevelDefinition[] = [
     ],
     wormholes: [wormhole(2900, 320, 220, 670, 2100, 270)],
     hazards: [hazard("sand_spike", 2460, 560, 170, 36, 20)],
+    seedFountainGhosts: [
+      seedGhost(1660, 1720, 280, 3, 1800),
+      seedGhost(3060, 3140, 260, 6, 1700),
+    ],
     milestone: false,
   },
   {
@@ -378,6 +408,10 @@ export const LEVELS: LevelDefinition[] = [
       hazard("sand_spike", 2260, 560, 170, 40, 22),
       hazard("sand_spike", 3220, 560, 170, 40, 22),
       hazard("sand_spike", 4620, 560, 170, 40, 22),
+    ],
+    seedFountainGhosts: [
+      seedGhost(1880, 1940, 260, 6, 1700),
+      seedGhost(3640, 3720, 240, 9, 1550),
     ],
     milestone: true,
     unlocksAbility: "shockwave",
@@ -504,7 +538,143 @@ export const LEVELS: LevelDefinition[] = [
     milestone: true,
     unlocksAbility: "phase_blink",
   },
+  {
+    id: 17,
+    biome: "desert",
+    quota: 26,
+    timeLimitSec: 120,
+    checkpointX: [1750, 3950, 5350],
+    exitGateX: 6050,
+    playerStart: { x: 120, y: 340 },
+    foods: [
+      food("locust", 1260, 220, 12, 380, 190, "swarm"),
+      food("locust", 3220, 250, 12, 410, 210, "swarm"),
+      food("locust", 4980, 300, 12, 400, 190, "swarm"),
+    ],
+    predators: [
+      predator(2480, 220, 3, 150, 162, 730, 540),
+      predator(4180, 220, 3, 150, 166, 700, 550),
+      predator(5480, 220, 2, 160, 168, 680, 560),
+    ],
+    wormholes: [
+      wormhole(2860, 300, 280, 880, 1400, 370),
+      wormhole(3860, 330, 270, 860, 1380, 365),
+      wormhole(4920, 280, 280, 890, 1340, 375),
+      wormhole(5660, 280, 260, 860, 1320, 370),
+    ],
+    hazards: [
+      hazard("sand_spike", 2680, 560, 210, 46, 27),
+      hazard("sand_spike", 3600, 560, 210, 46, 27),
+      hazard("sand_spike", 4660, 560, 210, 46, 27),
+      hazard("sand_spike", 5600, 560, 210, 46, 27),
+    ],
+    seedDrain: {
+      intervalMs: 2200,
+      amount: 1,
+      radius: 250,
+      consumePickups: true,
+    },
+    seedFountainGhosts: [
+      seedGhost(2280, 2360, 250, 6, 1650),
+      seedGhost(4660, 4740, 230, 9, 1500),
+    ],
+    milestone: false,
+  },
+  {
+    id: 18,
+    biome: "desert",
+    quota: 27,
+    timeLimitSec: 118,
+    checkpointX: [1800, 4100, 5550],
+    exitGateX: 6300,
+    playerStart: { x: 120, y: 340 },
+    foods: [
+      food("locust", 1320, 210, 12, 390, 200, "swarm"),
+      food("locust", 3400, 250, 12, 430, 220, "swarm"),
+      food("locust", 5250, 300, 12, 420, 200, "swarm"),
+    ],
+    predators: [
+      predator(2620, 220, 3, 150, 166, 700, 555),
+      predator(4420, 220, 3, 150, 170, 670, 565),
+      predator(5760, 220, 3, 145, 174, 640, 575),
+    ],
+    wormholes: [
+      wormhole(2920, 300, 290, 900, 1320, 380),
+      wormhole(3920, 330, 280, 890, 1300, 375),
+      wormhole(4820, 280, 290, 910, 1260, 385),
+      wormhole(5520, 330, 270, 880, 1240, 380),
+      wormhole(6020, 280, 260, 860, 1220, 378),
+    ],
+    hazards: [
+      hazard("sand_spike", 2760, 560, 220, 48, 28),
+      hazard("sand_spike", 3660, 560, 220, 48, 28),
+      hazard("sand_spike", 4660, 560, 220, 48, 28),
+      hazard("sand_spike", 5360, 560, 220, 48, 28),
+      hazard("sand_spike", 6060, 560, 220, 48, 28),
+    ],
+    seedDrain: {
+      intervalMs: 1900,
+      amount: 1,
+      radius: 280,
+      consumePickups: true,
+    },
+    seedFountainGhosts: [
+      seedGhost(2480, 2560, 250, 6, 1600),
+      seedGhost(5060, 5140, 220, 9, 1450),
+    ],
+    milestone: false,
+  },
+  {
+    id: 19,
+    biome: "desert",
+    quota: 29,
+    timeLimitSec: 116,
+    checkpointX: [1900, 4300, 5800],
+    exitGateX: 6600,
+    playerStart: { x: 120, y: 335 },
+    foods: [
+      food("locust", 1380, 210, 13, 410, 210, "swarm"),
+      food("locust", 3600, 250, 13, 450, 230, "swarm"),
+      food("locust", 5520, 300, 13, 440, 210, "swarm"),
+    ],
+    predators: [
+      predator(2780, 220, 3, 150, 170, 660, 570),
+      predator(4680, 220, 4, 140, 175, 620, 585),
+      predator(6100, 220, 3, 140, 178, 590, 595),
+    ],
+    wormholes: [
+      wormhole(3040, 300, 300, 940, 1240, 390),
+      wormhole(4080, 330, 290, 930, 1200, 390),
+      wormhole(5000, 280, 300, 950, 1160, 400),
+      wormhole(5720, 330, 280, 920, 1140, 395),
+      wormhole(6240, 280, 270, 900, 1120, 390),
+      wormhole(6460, 240, 250, 880, 1100, 385),
+    ],
+    hazards: [
+      hazard("sand_spike", 2860, 560, 220, 50, 29),
+      hazard("sand_spike", 3820, 560, 220, 50, 29),
+      hazard("sand_spike", 4840, 560, 220, 50, 29),
+      hazard("sand_spike", 5560, 560, 220, 50, 29),
+      hazard("sand_spike", 6160, 560, 220, 50, 29),
+      hazard("sand_spike", 6500, 560, 200, 50, 29),
+    ],
+    seedDrain: {
+      intervalMs: 1600,
+      amount: 2,
+      radius: 300,
+      consumePickups: true,
+    },
+    seedFountainGhosts: [
+      seedGhost(2620, 2700, 250, 3, 1600),
+      seedGhost(4560, 4640, 230, 6, 1500),
+      seedGhost(5960, 6040, 210, 9, 1400),
+    ],
+    milestone: false,
+  },
 ];
+
+export const MIN_LEVEL_ID = LEVELS[0]?.id ?? 1;
+export const MAX_LEVEL_ID = LEVELS[LEVELS.length - 1]?.id ?? 1;
 
 export function getLevelById(levelId: number): LevelDefinition {
   const level = LEVELS.find((entry) => entry.id === levelId);

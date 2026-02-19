@@ -266,6 +266,22 @@ export class PreloadScene extends Phaser.Scene {
       H: "#ffb7c0",
     });
 
+    this.drawPixelTexture("seed_fountain_ghost", [
+      "...gg...",
+      "..g66g..",
+      ".g6ww6g.",
+      "g6w11w6g",
+      "g6wwww6g",
+      ".g6ww6g.",
+      "..g66g..",
+      "...gg...",
+    ], {
+      g: "#88f6ff",
+      6: "#cbfbff",
+      w: "#f5feff",
+      1: "#2d4972",
+    });
+
     this.drawPixelTexture("boss_core", [
       "...bbbb...",
       "..b8778b..",

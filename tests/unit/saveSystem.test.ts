@@ -38,15 +38,15 @@ describe("SaveSystem", () => {
       "loopy_save_v1",
       JSON.stringify({
         highestUnlockedLevel: 999,
-        levelBestScores: { "1": 100, "18": 9999, "4": -2 },
+        levelBestScores: { "1": 100, "25": 9999, "4": -2 },
         settings: { musicVolume: 7, sfxVolume: -3 },
       }),
     );
 
     const loaded = SaveSystem.load();
-    expect(loaded.highestUnlockedLevel).toBe(16);
+    expect(loaded.highestUnlockedLevel).toBe(19);
     expect(loaded.levelBestScores[1]).toBe(100);
-    expect(loaded.levelBestScores[18]).toBeUndefined();
+    expect(loaded.levelBestScores[25]).toBeUndefined();
     expect(loaded.settings.musicVolume).toBe(1);
     expect(loaded.settings.sfxVolume).toBe(0);
   });

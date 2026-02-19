@@ -42,6 +42,21 @@ export interface HazardRule {
   type: "vine" | "sand_spike";
 }
 
+export interface SeedDrainRule {
+  intervalMs: number;
+  amount: number;
+  radius: number;
+  consumePickups?: boolean;
+}
+
+export interface SeedFountainGhostRule {
+  triggerX: number;
+  x: number;
+  y: number;
+  rewardSeeds: 3 | 6 | 9;
+  visibleMs?: number;
+}
+
 export interface LevelDefinition {
   id: number;
   biome: Biome;
@@ -54,6 +69,8 @@ export interface LevelDefinition {
   predators: PredatorSpawnRule[];
   wormholes: WormholeRule[];
   hazards: HazardRule[];
+  seedDrain?: SeedDrainRule;
+  seedFountainGhosts?: SeedFountainGhostRule[];
   milestone: boolean;
   unlocksAbility?: AbilityType;
 }

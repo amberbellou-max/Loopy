@@ -51,6 +51,7 @@ export interface LevelDebugSnapshot {
   economy: {
     livesRemaining: number;
     seedCount: number;
+    seedsConsumedByEnemies: number;
     universeSeedCount: number;
     bloomMeter: number;
     checkpointCost: number;
@@ -63,6 +64,8 @@ export interface LevelDebugSnapshot {
     lastResolvedActionAt: number;
     lastBlockedReason: string | null;
     lastBlockedAt: number;
+    specialsRemaining: number;
+    specialsMax: number;
     holdShotIntervalMs: number;
     nextHoldShotInMs: number;
   };
@@ -75,6 +78,7 @@ export interface LevelDebugSnapshot {
     projectilesTotal: number;
     glitterShots: number;
     pickups: number;
+    seedFountainGhosts: number;
     bossAlive: boolean;
     bossHpRatio: number | null;
     bossPhase: 1 | 2 | 3 | null;

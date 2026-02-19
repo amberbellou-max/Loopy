@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { SaveSystem } from "../systems/SaveSystem";
+import { MAX_LEVEL_ID } from "../data/levels";
 
 interface WorldMapData {
   selectedLevel?: number;
@@ -12,7 +13,7 @@ export class WorldMapScene extends Phaser.Scene {
 
   create(data: WorldMapData): void {
     const save = SaveSystem.load();
-    const selectedLevel = data.selectedLevel ?? save.highestUnlockedLevel;
+    const selectedLevel = Phaser.Math.Clamp(data.selectedLevel ?? save.highestUnlockedLevel, 1, MAX_LEVEL_ID);
     const { width, height } = this.scale;
 
     this.add
@@ -30,13 +31,13 @@ export class WorldMapScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    const cols = 4;
-    const spacingX = 240;
-    const spacingY = 120;
+    const cols = MAX_LEVEL_ID > 16 ? 5 : 4;
+    const spacingX = cols === 5 ? 200 : 240;
+    const spacingY = cols === 5 ? 96 : 120;
     const startX = width * 0.5 - ((cols - 1) * spacingX) / 2;
-    const startY = 210;
+    const startY = cols === 5 ? 180 : 210;
 
-    for (let level = 1; level <= 16; level += 1) {
+    for (let level = 1; level <= MAX_LEVEL_ID; level += 1) {
       const col = (level - 1) % cols;
       const row = Math.floor((level - 1) / cols);
       const x = startX + col * spacingX;

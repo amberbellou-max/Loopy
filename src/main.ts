@@ -2,6 +2,7 @@ import "./style.css";
 import Phaser from "phaser";
 import { createGame } from "./game/Game";
 import { SaveSystem } from "./systems/SaveSystem";
+import { MAX_LEVEL_ID } from "./data/levels";
 
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) {
@@ -92,7 +93,7 @@ if (isE2EMode) {
 
   const requestedLevel = Number(searchParams.get("autolevel"));
   if (Number.isFinite(requestedLevel)) {
-    const levelId = Phaser.Math.Clamp(Math.floor(requestedLevel), 1, 16);
+    const levelId = Phaser.Math.Clamp(Math.floor(requestedLevel), 1, MAX_LEVEL_ID);
     const startRequestedLevel = (): void => {
       if (game.scene.isBooted) {
         const activeScenes = game.scene.getScenes(true, false);

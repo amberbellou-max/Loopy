@@ -1,6 +1,6 @@
 # Loopy
 
-Loopy is a Phaser 3 + TypeScript side-scrolling game with 16 handcrafted levels.
+Loopy is a Phaser 3 + TypeScript side-scrolling game with 19 handcrafted levels.
 
 ## Core Gameplay
 - Play as a flying fish-fairy creature.
@@ -13,6 +13,7 @@ Loopy is a Phaser 3 + TypeScript side-scrolling game with 16 handcrafted levels.
   - `Arcane Totem`: armored sentry that only takes damage from direct glitter shots.
   - `Serpent Stalker`: snake-like hunter with a trailing body. Bait it into its own tail to make it self-destruct.
 - You can still use Space-bar combat on serpents (shots/bomb/shield), but tail-trap kills are rewarded.
+- Seed Fountain Ghosts now blink in on selected chapters, vanish quickly, and drop burst seed showers (`3/6/9`) if caught in time.
 - `Ocean Wormhole` hazard: if it grabs you, the HUD prompts a breakaway event.
   - Escape rule: press `Space` while steering away with arrows/WASD.
   - You must tap `Space` and move away from its dark center to break free.
@@ -21,16 +22,17 @@ Loopy is a Phaser 3 + TypeScript side-scrolling game with 16 handcrafted levels.
 - Charge and trigger Universe Bloom (`Q`) for screen-clearing power.
 
 ## Progression
-- 16 levels total.
+- 19 levels total.
 - Jungle arc: levels 1-8.
-- Desert arc: levels 9-16.
+- Desert arc: levels 9-19.
 - Milestone challenges: levels 4, 8, 12, 16.
 - Abilities unlock by milestones: `dash -> glide -> shockwave -> phase_blink`.
+- Final challenge stretch (levels 17-19): enemies consume seed resources by stealing nearby seeds and devouring seed pickups.
 
 ## Controls
 - Keyboard
   - Move: `WASD` or arrow keys
-  - Glitter Combat: hold `Space` for rapid fire, tap combo on `Space` (1x shot, 2x bomb, 3x shield)
+  - Glitter Combat: hold `Space` for rapid fire, tap combo on `Space` (1x shot, 2x Star Burst, 3x shield + 2s enemy freeze)
   - Universe Bloom: `Q` (requires full meter)
   - Dash trigger: `Shift`
   - Pause: `P`
@@ -44,6 +46,11 @@ Loopy is a Phaser 3 + TypeScript side-scrolling game with 16 handcrafted levels.
   - Rare pickups: seed, universe seed, and extra life.
   - Checkpoints require seeds (cost scales by level).
 - Lives: each level starts with 3 lives; death consumes one life.
+- Space special budget per level:
+  - Levels 1-5: `4` Star Bursts
+  - Levels 6-10: `3` Star Bursts
+  - Levels 11-19: `2` Star Bursts
+  - Budget is spent only by the double-tap (`2x`) Star Burst.
 - Universe Bloom:
   - Full meter required.
   - Clears enemy bullets, stuns enemies, suppresses wormhole pressure, damages boss.

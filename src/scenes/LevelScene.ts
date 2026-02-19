@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { DAMAGE } from "../data/balance";
-import { getLevelById } from "../data/levels";
+import { getLevelById, MAX_LEVEL_ID } from "../data/levels";
 import { getUnlockedAbilities } from "../data/upgrades";
 import { ArcaneBoss } from "../entities/ArcaneBoss";
 import { FlashPredator } from "../entities/FlashPredator";
@@ -9,6 +9,7 @@ import { GlitterShot } from "../entities/GlitterShot";
 import { OceanWormhole } from "../entities/OceanWormhole";
 import { PlayerFishFairy } from "../entities/PlayerFishFairy";
 import { Projectile } from "../entities/Projectile";
+import { SeedFountainGhost } from "../entities/SeedFountainGhost";
 import { SeedPickup } from "../entities/SeedPickup";
 import { Wormhole } from "../entities/Wormhole";
 import { AudioSystem } from "../systems/AudioSystem";
@@ -17,7 +18,7 @@ import { InputSystem, type InputSnapshot } from "../systems/InputSystem";
 import { SaveSystem } from "../systems/SaveSystem";
 import { SpawnSystem } from "../systems/SpawnSystem";
 import { checkpointSeedCost, getDifficultyParams, scaleQuota, scaleTimeLimit, type DifficultyParams } from "../systems/difficulty";
-import type { LevelDefinition } from "../types/gameTypes";
+import type { LevelDefinition, SeedFountainGhostRule } from "../types/gameTypes";
 import { GAME_EVENTS } from "../types/gameTypes";
 import type { LevelDebugSnapshot } from "../types/debugTypes";
 import { HUD } from "../ui/HUD";
@@ -57,6 +58,7 @@ export class LevelScene extends Phaser.Scene {
   private projectiles!: Phaser.Physics.Arcade.Group;
   private glitterShots!: Phaser.Physics.Arcade.Group;
   private pickups!: Phaser.Physics.Arcade.Group;
+  private seedFountainGhosts!: Phaser.Physics.Arcade.Group;
   private exitGate!: Phaser.Physics.Arcade.Sprite;
 
   private boss: ArcaneBoss | null = null;
@@ -73,9 +75,12 @@ export class LevelScene extends Phaser.Scene {
   private lastHazardDamageAt = 0;
   private lastExitHintAt = 0;
   private lastCheckpointHintAt = 0;
+  private lastSeedDrainHintAt = 0;
+  private lastPickupDevourHintAt = 0;
 
   private livesRemaining = 3;
   private seedCount = 0;
+  private seedsConsumedByEnemies = 0;
   private universeSeedCount = 0;
   private bloomMeter = 0;
   private shieldUntil = 0;
@@ -92,6 +97,9 @@ export class LevelScene extends Phaser.Scene {
   private shotFlashIntervalMs = 65;
   private maxEnemyProjectiles = 150;
   private maxGlitterShots = 90;
+  private spaceSpecialsMax = 4;
+  private spaceSpecialsRemaining = 4;
+  private lastSpecialsEmptyHintAt = 0;
   private lastResolvedSpaceAction: GlitterComboAction | null = null;
   private lastResolvedSpaceActionAt = 0;
   private lastBlockedSpaceActionReason: string | null = null;
@@ -106,6 +114,9 @@ export class LevelScene extends Phaser.Scene {
   private debugUpdateCount = 0;
   private debugConsecutiveStallFrames = 0;
   private debugWorstConsecutiveStallFrames = 0;
+  private nextEnemySeedDrainAt = 0;
+  private nextSeedGhostEventIndex = 0;
+  private nextSeedGhostHintAt = 0;
 
   private timeLeftSec: number | null = null;
 
@@ -114,7 +125,7 @@ export class LevelScene extends Phaser.Scene {
   }
 
   create(data: LevelSceneData): void {
-    const levelId = Phaser.Math.Clamp(data.levelId ?? 1, 1, 16);
+    const levelId = Phaser.Math.Clamp(data.levelId ?? 1, 1, MAX_LEVEL_ID);
     this.level = getLevelById(levelId);
     this.difficulty = getDifficultyParams(levelId);
 
@@ -132,9 +143,12 @@ export class LevelScene extends Phaser.Scene {
     this.lastHazardDamageAt = 0;
     this.lastExitHintAt = 0;
     this.lastCheckpointHintAt = 0;
+    this.lastSeedDrainHintAt = 0;
+    this.lastPickupDevourHintAt = 0;
 
     this.livesRemaining = 3;
     this.seedCount = 0;
+    this.seedsConsumedByEnemies = 0;
     this.universeSeedCount = 0;
     this.bloomMeter = 0;
     this.shieldUntil = 0;
@@ -151,6 +165,9 @@ export class LevelScene extends Phaser.Scene {
     this.holdShotIntervalMs = Phaser.Math.Clamp(180 - this.level.id * 5, 95, 150);
     this.maxEnemyProjectiles = Phaser.Math.Clamp(90 + this.level.id * 4, 105, 160);
     this.maxGlitterShots = Phaser.Math.Clamp(60 + this.level.id * 2, 74, 112);
+    this.spaceSpecialsMax = this.getSpaceSpecialBudget(levelId);
+    this.spaceSpecialsRemaining = this.spaceSpecialsMax;
+    this.lastSpecialsEmptyHintAt = 0;
     this.lastResolvedSpaceAction = null;
     this.lastResolvedSpaceActionAt = 0;
     this.lastBlockedSpaceActionReason = null;
@@ -165,6 +182,9 @@ export class LevelScene extends Phaser.Scene {
     this.debugUpdateCount = 0;
     this.debugConsecutiveStallFrames = 0;
     this.debugWorstConsecutiveStallFrames = 0;
+    this.nextEnemySeedDrainAt = 0;
+    this.nextSeedGhostEventIndex = 0;
+    this.nextSeedGhostHintAt = 0;
 
     this.boss = null;
     this.bossSpawned = false;
@@ -180,6 +200,7 @@ export class LevelScene extends Phaser.Scene {
     this.projectiles = this.physics.add.group();
     this.glitterShots = this.physics.add.group();
     this.pickups = this.physics.add.group();
+    this.seedFountainGhosts = this.physics.add.group();
 
     const spawnSystem = new SpawnSystem(this);
     const spawned = spawnSystem.spawnLevel(this.level, this.difficulty);
@@ -216,6 +237,7 @@ export class LevelScene extends Phaser.Scene {
     this.hud.updateHealth(this.player.getHealthRatio());
     this.hud.updateEconomy(this.livesRemaining, this.seedCount, this.universeSeedCount, this.bloomMeter);
     this.hud.updateCheckpointCost(this.checkpointCost);
+    this.hud.updateSpecials(this.spaceSpecialsRemaining, this.spaceSpecialsMax);
     this.hud.flashCheckpoint(`Level ${this.level.id}: Eat ${this.effectiveQuota} food`);
 
     this.setDomFlag("loopyCurrentLevel", String(this.level.id));
@@ -286,6 +308,8 @@ export class LevelScene extends Phaser.Scene {
       });
       return true;
     });
+    this.updateEnemySeedDrain(time);
+    this.updateSeedFountainGhosts(time);
 
     const bossPhasePullMultiplier = this.boss && this.boss.isAlive() ? (this.boss.getPhase() === 1 ? 1 : this.boss.getPhase() === 2 ? 1.35 : 1.75) : 1;
     const bloomPullMultiplier = time < this.bloomActiveUntil ? 0.22 : 1;
@@ -344,6 +368,18 @@ export class LevelScene extends Phaser.Scene {
       return true;
     });
 
+    this.seedFountainGhosts.children.each((entry) => {
+      const ghost = entry as SeedFountainGhost;
+      if (time >= ghost.expiresAt) {
+        if (time >= this.nextSeedGhostHintAt) {
+          this.hud.flashCheckpoint("Seed Fountain Ghost faded");
+          this.nextSeedGhostHintAt = time + 500;
+        }
+        ghost.destroy();
+      }
+      return true;
+    });
+
     this.updateCheckpoints(time);
     this.updateExitGateVisual();
 
@@ -351,6 +387,7 @@ export class LevelScene extends Phaser.Scene {
     this.hud.updateQuota(this.collected, this.effectiveQuota);
     this.hud.updateEconomy(this.livesRemaining, this.seedCount, this.universeSeedCount, this.bloomMeter);
     this.hud.updateCheckpointCost(this.checkpointCost);
+    this.hud.updateSpecials(this.spaceSpecialsRemaining, this.spaceSpecialsMax);
     this.hud.updateCombo(this.comboSystem.getPendingTapCount(time));
 
     if (this.timeLeftSec !== null) {
@@ -409,6 +446,7 @@ export class LevelScene extends Phaser.Scene {
       economy: {
         livesRemaining: this.livesRemaining,
         seedCount: this.seedCount,
+        seedsConsumedByEnemies: this.seedsConsumedByEnemies,
         universeSeedCount: this.universeSeedCount,
         bloomMeter: this.bloomMeter,
         checkpointCost: this.checkpointCost,
@@ -424,6 +462,8 @@ export class LevelScene extends Phaser.Scene {
         lastResolvedActionAt: this.lastResolvedSpaceActionAt,
         lastBlockedReason: this.lastBlockedSpaceActionReason,
         lastBlockedAt: this.lastBlockedSpaceActionAt,
+        specialsRemaining: this.spaceSpecialsRemaining,
+        specialsMax: this.spaceSpecialsMax,
         holdShotIntervalMs: this.holdShotIntervalMs,
         nextHoldShotInMs: Math.max(0, this.nextHoldShotAt - now),
       },
@@ -436,6 +476,7 @@ export class LevelScene extends Phaser.Scene {
         projectilesTotal: projectilesEnemy + projectilesPlayer,
         glitterShots: this.glitterShots.countActive(true),
         pickups: this.pickups.countActive(true),
+        seedFountainGhosts: this.seedFountainGhosts.countActive(true),
         bossAlive: Boolean(this.boss && this.boss.isAlive()),
         bossHpRatio: this.boss && this.boss.isAlive() ? this.boss.getHpRatio() : null,
         bossPhase: this.boss && this.boss.isAlive() ? this.boss.getPhase() : null,
@@ -489,11 +530,52 @@ export class LevelScene extends Phaser.Scene {
       this.handleProjectileOnPlayer(target as Projectile);
     });
 
+    if (this.level.seedDrain) {
+      this.physics.add.overlap(this.player, this.predators, () => {
+        this.applyPlayerDamage(DAMAGE.predatorContact, { seedDrain: true });
+      });
+    }
+
     this.physics.add.overlap(this.player, this.pickups, (_, target) => {
       const pickup = target as SeedPickup;
+      if (!pickup.active) {
+        return;
+      }
       this.collectPickup(pickup);
       pickup.destroy();
     });
+
+    this.physics.add.overlap(this.player, this.seedFountainGhosts, (_, target) => {
+      const ghost = target as SeedFountainGhost;
+      if (!ghost.active) {
+        return;
+      }
+      this.collectSeedFountainGhost(ghost);
+    });
+
+    if (this.level.seedDrain?.consumePickups) {
+      this.physics.add.overlap(this.predators, this.pickups, (predatorObj, pickupObj) => {
+        const pickup = pickupObj as SeedPickup;
+        if (!pickup.active || pickup.pickupType === "life") {
+          return;
+        }
+
+        const predator = predatorObj as FlashPredator;
+        pickup.destroy();
+
+        const consumed = pickup.pickupType === "universe_seed" ? 2 : 1;
+        this.seedsConsumedByEnemies += consumed;
+        this.spawnSeedDrainFx(predator.x, predator.y);
+
+        const now = this.time.now;
+        if (now - this.lastPickupDevourHintAt > 350) {
+          this.hud.flashCheckpoint(
+            pickup.pickupType === "universe_seed" ? "Enemy devoured a universe seed!" : "Enemy devoured a seed pickup!",
+          );
+          this.lastPickupDevourHintAt = now;
+        }
+      });
+    }
 
     this.physics.add.overlap(this.glitterShots, this.predators, (shotObj, predatorObj) => {
       const shot = shotObj as GlitterShot;
@@ -650,17 +732,27 @@ export class LevelScene extends Phaser.Scene {
     }
 
     if (action === "bomb") {
+      if (this.spaceSpecialsRemaining <= 0) {
+        this.lastBlockedSpaceActionReason = "no_space_specials";
+        this.lastBlockedSpaceActionAt = time;
+        if (time - this.lastSpecialsEmptyHintAt > 700) {
+          this.hud.flashCheckpoint("Out of burst charges");
+          this.lastSpecialsEmptyHintAt = time;
+        }
+        return;
+      }
+
       if (time < this.nextBombAt) {
         this.lastBlockedSpaceActionReason = "bomb_cooldown";
         this.lastBlockedSpaceActionAt = time;
-        this.flashCombatHint("Bomb recharging", time);
+        this.flashCombatHint("Burst recharging", time);
         return;
       }
       this.nextBombAt = time + 620;
-      this.triggerGlitterBomb(220, 48, 1400, time);
-      this.hud.flashCheckpoint("Glitter Bomb");
+      this.triggerGlitterBomb(time);
       this.audioSystem.playAbility();
-      this.cameras.main.shake(110, 0.0042);
+      this.cameras.main.shake(130, 0.0052);
+      this.spaceSpecialsRemaining = Math.max(0, this.spaceSpecialsRemaining - 1);
       this.lastResolvedSpaceAction = "bomb";
       this.lastResolvedSpaceActionAt = time;
       this.lastBlockedSpaceActionReason = null;
@@ -675,6 +767,7 @@ export class LevelScene extends Phaser.Scene {
     }
     this.nextShieldCastAt = time + 2600;
     this.activateShield(time);
+    this.freezeEnemiesForShield(time, 2000);
     this.audioSystem.playAbility();
     this.cameras.main.shake(70, 0.0024);
     this.lastResolvedSpaceAction = "shield";
@@ -809,63 +902,54 @@ export class LevelScene extends Phaser.Scene {
     }
   }
 
-  private triggerGlitterBomb(radius: number, damage: number, stunMs: number, time: number): void {
+  private triggerGlitterBomb(time: number): void {
     const x = this.player.x;
     const y = this.player.y;
+    const radius = 420;
 
-    const ring = this.add.circle(x, y, 20, 0xb7f6ff, 0.2);
-    ring.setStrokeStyle(4, 0xdbfbff, 0.8);
+    const ring = this.add.circle(x, y, 22, 0xb7f6ff, 0.26);
+    ring.setStrokeStyle(5, 0xdbfbff, 0.9);
     ring.setDepth(20);
     this.tweens.add({
       targets: ring,
       radius,
       alpha: 0,
-      duration: 220,
+      duration: 300,
       onComplete: () => ring.destroy(),
     });
 
-    let popped = 0;
+    let clearedProjectiles = 0;
+    let wipedEnemies = 0;
 
     this.projectiles.children.each((entry) => {
       const projectile = entry as Projectile;
       if (projectile.owner !== "enemy") {
         return true;
       }
-      const distance = Phaser.Math.Distance.Between(x, y, projectile.x, projectile.y);
-      if (distance <= radius) {
-        projectile.destroy();
-        popped += 1;
-      }
+      projectile.destroy();
+      clearedProjectiles += 1;
       return true;
     });
 
     this.predators.children.each((entry) => {
       const predator = entry as FlashPredator;
-      const distance = Phaser.Math.Distance.Between(x, y, predator.x, predator.y);
-      if (distance <= radius + 30) {
-        predator.stun(stunMs, time);
-        const dx = predator.x - x;
-        const dy = predator.y - y;
-        const len = Math.max(1, Math.hypot(dx, dy));
-        const dead = predator.applyDamage(damage, "bomb");
-        if (!dead && predator.active) {
-          predator.setVelocity((dx / len) * 330, (dy / len) * 330);
-        }
+      if (!predator.active) {
+        return true;
+      }
+      const dead = predator.applyDamage(9_999, "glitter");
+      if (dead) {
+        wipedEnemies += 1;
       }
       return true;
     });
 
     if (this.boss && this.boss.isAlive()) {
-      const distance = Phaser.Math.Distance.Between(x, y, this.boss.x, this.boss.y);
-      if (distance <= radius + 70) {
-        this.boss.stun(900, time);
-        this.boss.applyDamage(220, time);
-      }
+      this.boss.stun(1300, time);
+      this.boss.applyDamage(980, time);
     }
 
-    if (popped > 0) {
-      this.hud.flashCheckpoint(`Bomb popped ${popped}`);
-    }
+    this.seedCount += Math.min(12, wipedEnemies * 2);
+    this.hud.flashCheckpoint(`Star Burst! Wiped ${wipedEnemies}, cleared ${clearedProjectiles}`);
   }
 
   private activateShield(time: number): void {
@@ -903,6 +987,26 @@ export class LevelScene extends Phaser.Scene {
     });
 
     this.hud.flashCheckpoint(reflected > 0 ? `Glitter Shield reflected ${reflected}` : "Glitter Shield");
+  }
+
+  private freezeEnemiesForShield(time: number, durationMs: number): void {
+    let frozenCount = 0;
+    this.predators.children.each((entry) => {
+      const predator = entry as FlashPredator;
+      if (!predator.active) {
+        return true;
+      }
+      predator.stun(durationMs, time);
+      frozenCount += 1;
+      return true;
+    });
+
+    if (this.boss && this.boss.isAlive()) {
+      this.boss.stun(durationMs, time);
+      frozenCount += 1;
+    }
+
+    this.hud.flashCheckpoint(`Enemy freeze ${Math.round(durationMs / 1000)}s (${frozenCount})`);
   }
 
   private tryActivateUniverseBloom(time: number): void {
@@ -1004,6 +1108,128 @@ export class LevelScene extends Phaser.Scene {
     this.hud.flashCheckpoint("+1 Life");
   }
 
+  private updateSeedFountainGhosts(time: number): void {
+    const events = this.level.seedFountainGhosts;
+    if (!events || this.nextSeedGhostEventIndex >= events.length) {
+      return;
+    }
+
+    const event = events[this.nextSeedGhostEventIndex];
+    if (this.player.x < event.triggerX) {
+      return;
+    }
+
+    this.nextSeedGhostEventIndex += 1;
+    this.spawnSeedFountainGhost(event, time);
+  }
+
+  private spawnSeedFountainGhost(event: SeedFountainGhostRule, time: number): void {
+    const ghost = new SeedFountainGhost(
+      this,
+      event.x + Phaser.Math.Between(-16, 16),
+      event.y + Phaser.Math.Between(-12, 12),
+      event.rewardSeeds,
+      event.visibleMs ?? 2000,
+    );
+    this.seedFountainGhosts.add(ghost);
+
+    if (time >= this.nextSeedGhostHintAt) {
+      this.hud.flashCheckpoint(`Seed Fountain Ghost! Catch for ${event.rewardSeeds} seeds`);
+      this.nextSeedGhostHintAt = time + 450;
+    }
+  }
+
+  private collectSeedFountainGhost(ghost: SeedFountainGhost): void {
+    const reward = ghost.rewardSeeds;
+    const originX = ghost.x;
+    const originY = ghost.y;
+
+    ghost.destroy();
+
+    for (let i = 0; i < reward; i += 1) {
+      const angle = (i / reward) * Math.PI * 2;
+      const radius = 14 + (i % 3) * 7;
+      const pickup = new SeedPickup(
+        this,
+        originX + Math.cos(angle) * radius + Phaser.Math.Between(-3, 3),
+        originY + Math.sin(angle) * radius + Phaser.Math.Between(-3, 3),
+        "seed",
+      );
+      pickup.setData("expiresAt", this.time.now + 7500);
+      this.pickups.add(pickup);
+    }
+
+    const pop = this.add.circle(originX, originY, 12, 0xaefbff, 0.26);
+    pop.setDepth(20);
+    this.tweens.add({
+      targets: pop,
+      radius: 72,
+      alpha: 0,
+      duration: 280,
+      onComplete: () => pop.destroy(),
+    });
+
+    this.audioSystem.playCheckpoint();
+    this.hud.flashCheckpoint(`Seed Fountain! ${reward} seeds appeared`);
+  }
+
+  private updateEnemySeedDrain(time: number): void {
+    const rule = this.level.seedDrain;
+    if (!rule || this.seedCount <= 0) {
+      return;
+    }
+
+    if (time < this.nextEnemySeedDrainAt) {
+      return;
+    }
+
+    let nearest: FlashPredator | null = null;
+    let nearestDistance = rule.radius;
+    for (const entry of this.predators.getChildren()) {
+      const predator = entry as FlashPredator;
+      if (!predator.active) {
+        continue;
+      }
+      const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, predator.x, predator.y);
+      if (distance <= nearestDistance) {
+        nearest = predator;
+        nearestDistance = distance;
+      }
+    }
+
+    if (!nearest) {
+      this.nextEnemySeedDrainAt = time + Math.round(rule.intervalMs * 0.5);
+      return;
+    }
+
+    this.nextEnemySeedDrainAt = time + rule.intervalMs;
+    const drained = Math.min(this.seedCount, Math.max(1, Math.floor(rule.amount)));
+    if (drained <= 0) {
+      return;
+    }
+
+    this.seedCount -= drained;
+    this.seedsConsumedByEnemies += drained;
+    this.spawnSeedDrainFx(nearest.x, nearest.y);
+
+    if (time - this.lastSeedDrainHintAt > 360) {
+      this.hud.flashCheckpoint(`Seed eater stole ${drained} seed${drained === 1 ? "" : "s"}!`);
+      this.lastSeedDrainHintAt = time;
+    }
+  }
+
+  private spawnSeedDrainFx(x: number, y: number): void {
+    const burst = this.add.circle(x, y, 10, 0xff8f6b, 0.24);
+    burst.setDepth(19);
+    this.tweens.add({
+      targets: burst,
+      radius: 48,
+      alpha: 0,
+      duration: 220,
+      onComplete: () => burst.destroy(),
+    });
+  }
+
   private handleProjectileOnPlayer(projectile: Projectile): void {
     if (projectile.owner === "player") {
       return;
@@ -1019,7 +1245,7 @@ export class LevelScene extends Phaser.Scene {
       return;
     }
 
-    this.applyPlayerDamage(projectile.damage);
+    this.applyPlayerDamage(projectile.damage, { seedDrain: true });
     projectile.destroy();
   }
 
@@ -1032,7 +1258,7 @@ export class LevelScene extends Phaser.Scene {
     this.applyPlayerDamage(amount);
   }
 
-  private applyPlayerDamage(amount: number): void {
+  private applyPlayerDamage(amount: number, options?: { seedDrain?: boolean }): void {
     const now = this.time.now;
     if (now < this.shieldUntil) {
       return;
@@ -1045,6 +1271,9 @@ export class LevelScene extends Phaser.Scene {
 
     this.events.emit(GAME_EVENTS.PLAYER_DAMAGED, { amount, health: this.player.health });
     this.audioSystem.playHit();
+    if (options?.seedDrain) {
+      this.drainSeedsOnEnemyHit(now);
+    }
 
     if (this.player.health <= 0 || amount >= DAMAGE.wormholeCoreReset) {
       this.livesRemaining -= 1;
@@ -1060,6 +1289,26 @@ export class LevelScene extends Phaser.Scene {
       this.shieldUntil = now + 1000;
       this.hud.flashCheckpoint(`Respawn! Lives left: ${this.livesRemaining}`);
       this.setDomFlag("loopyRespawnCount", String(this.deaths));
+    }
+  }
+
+  private drainSeedsOnEnemyHit(time: number): void {
+    const rule = this.level.seedDrain;
+    if (!rule || this.seedCount <= 0) {
+      return;
+    }
+
+    const drained = Math.min(this.seedCount, Math.max(1, Math.ceil(rule.amount * 0.5)));
+    if (drained <= 0) {
+      return;
+    }
+    this.seedCount -= drained;
+    this.seedsConsumedByEnemies += drained;
+    this.spawnSeedDrainFx(this.player.x, this.player.y);
+
+    if (time - this.lastSeedDrainHintAt > 320) {
+      this.hud.flashCheckpoint(`Hit! Lost ${drained} seed${drained === 1 ? "" : "s"}`);
+      this.lastSeedDrainHintAt = time;
     }
   }
 
@@ -1326,11 +1575,11 @@ export class LevelScene extends Phaser.Scene {
     this.audioSystem.stopMusic();
 
     this.time.delayedCall(900, () => {
-      if (this.level.id >= 16) {
+      if (this.level.id >= MAX_LEVEL_ID) {
         const totalScore = Object.values(save.levelBestScores).reduce((acc, value) => acc + value, 0);
         this.scene.start("VictoryScene", { totalScore });
       } else {
-        this.scene.start("WorldMapScene", { selectedLevel: Math.min(16, this.level.id + 1) });
+        this.scene.start("WorldMapScene", { selectedLevel: Math.min(MAX_LEVEL_ID, this.level.id + 1) });
       }
     });
   }
@@ -1423,5 +1672,15 @@ export class LevelScene extends Phaser.Scene {
       return;
     }
     document.body.dataset[key] = value;
+  }
+
+  private getSpaceSpecialBudget(levelId: number): number {
+    if (levelId >= 11) {
+      return 2;
+    }
+    if (levelId >= 6) {
+      return 3;
+    }
+    return 4;
   }
 }
