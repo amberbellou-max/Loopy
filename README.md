@@ -75,6 +75,14 @@ Loopy is a Phaser 3 + TypeScript side-scrolling game with 19 handcrafted levels.
 4. Run unit tests: `npm run test`.
 5. Run E2E tests: `npm run test:e2e`.
 
+## Deployment
+- Primary (recommended): GitHub Pages source set to `GitHub Actions`.
+- Fallback (branch mode): a backup workflow publishes built files to `gh-pages`.
+- If the site ever serves `/src/main.ts` again, set Pages to:
+  - Source: `Deploy from a branch`
+  - Branch: `gh-pages` / `root`
+- Live URL: `https://amberbellou-max.github.io/Loopy/`
+
 ## E2E Debug Hooks
 - Hooks are enabled only in `?e2e=1` mode.
 - Query params:
