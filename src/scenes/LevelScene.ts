@@ -1401,6 +1401,7 @@ export class LevelScene extends Phaser.Scene {
       this.player.respawnAt(this.currentCheckpoint.x, this.currentCheckpoint.y, now);
       this.shieldUntil = now + 1000;
       this.hud.flashCheckpoint(`Respawn! Lives left: ${this.livesRemaining}`);
+      this.hud.showTokenLesson("death", now);
       this.setDomFlag("loopyRespawnCount", String(this.deaths));
     }
   }
@@ -1753,6 +1754,7 @@ export class LevelScene extends Phaser.Scene {
       score,
     });
     this.setDomFlag("loopyLevelCompleted", String(this.level.id));
+    this.hud.showTokenLesson("chapter", this.time.now);
 
     this.audioSystem.stopMusic();
 
@@ -1819,8 +1821,12 @@ export class LevelScene extends Phaser.Scene {
   }
 
   private createBackground(biome: "jungle" | "desert"): void {
-    const skyColor = biome === "jungle" ? 0x1d7367 : 0xc9833a;
-    const fogColor = biome === "jungle" ? 0x50d3a8 : 0xffcf7a;
+    const palette = this.getChapterPalette(this.level.id, biome);
+    const skyColor = palette.sky;
+    const fogColor = palette.fog;
+    const sparkleColor = palette.sparkle;
+    const groundColor = palette.ground;
+    const floraColor = palette.flora;
 
     this.add.rectangle(this.levelWidth * 0.5, 330, this.levelWidth, 660, skyColor, 1).setDepth(-20);
 
@@ -1834,19 +1840,79 @@ export class LevelScene extends Phaser.Scene {
     for (let i = 0; i < 80; i += 1) {
       const x = Phaser.Math.Between(20, this.levelWidth - 20);
       const y = Phaser.Math.Between(40, 260);
-      const sparkleColor = biome === "jungle" ? 0xcffff2 : 0xfff0c3;
       this.add.rectangle(x, y, 2, 2, sparkleColor, 0.35).setDepth(-12);
     }
 
-    const groundColor = biome === "jungle" ? 0x1d7f5b : 0xc58a47;
     this.add.rectangle(this.levelWidth * 0.5, 620, this.levelWidth, 80, groundColor, 0.9).setDepth(-5);
 
     for (let i = 0; i < 70; i += 1) {
       const x = i * (this.levelWidth / 70) + Phaser.Math.Between(-10, 10);
       const y = Phaser.Math.Between(560, 620);
-      const color = biome === "jungle" ? 0x69f6a1 : 0xffd07f;
-      this.add.rectangle(x, y, Phaser.Math.Between(4, 10), Phaser.Math.Between(16, 28), color, 0.82).setDepth(-2);
+      this.add.rectangle(x, y, Phaser.Math.Between(4, 10), Phaser.Math.Between(16, 28), floraColor, 0.82).setDepth(-2);
     }
+  }
+
+  private getChapterPalette(levelId: number, biome: "jungle" | "desert"): {
+    sky: number;
+    fog: number;
+    sparkle: number;
+    ground: number;
+    flora: number;
+  } {
+    const chapterSkyColors = [
+      0x62b9ff, // light blue
+      0xff8ecf, // pink
+      0xffe85a, // bright yellow
+      0x8bd8ff, // light blue
+      0xff6fb7, // pink
+      0xfff066, // bright yellow
+      0x70c8ff, // light blue
+      0xff9ad8, // pink
+      0xffd95a, // warm yellow
+      0x6ab2ff, // blue
+      0xff7fcb, // magenta pink
+      0xffee73, // yellow
+      0x86d6ff, // blue
+      0xffa6e6, // pink
+      0xffdc4d, // yellow
+      0x74bbff, // blue
+      0xff85c2, // pink
+      0xfff27e, // yellow
+      0x97e3ff, // pale blue
+    ];
+
+    const sky = chapterSkyColors[(Math.max(1, levelId) - 1) % chapterSkyColors.length];
+    const fogTarget = biome === "jungle" ? 0xa8ffe8 : 0xfff6b6;
+    const groundTarget = biome === "jungle" ? 0x1d6f54 : 0x8f642e;
+    const floraTarget = biome === "jungle" ? 0x62ff9a : 0xffc96d;
+
+    const fog = this.blendColor(sky, fogTarget, 0.58);
+    const sparkle = this.blendColor(fog, 0xffffff, 0.45);
+    const ground = this.blendColor(sky, groundTarget, 0.62);
+    const flora = this.blendColor(fog, floraTarget, 0.64);
+
+    return {
+      sky,
+      fog,
+      sparkle,
+      ground,
+      flora,
+    };
+  }
+
+  private blendColor(from: number, to: number, t: number): number {
+    const ratio = Phaser.Math.Clamp(t, 0, 1);
+    const fr = (from >> 16) & 0xff;
+    const fg = (from >> 8) & 0xff;
+    const fb = from & 0xff;
+    const tr = (to >> 16) & 0xff;
+    const tg = (to >> 8) & 0xff;
+    const tb = to & 0xff;
+
+    const r = Math.round(fr + (tr - fr) * ratio);
+    const g = Math.round(fg + (tg - fg) * ratio);
+    const b = Math.round(fb + (tb - fb) * ratio);
+    return (r << 16) | (g << 8) | b;
   }
 
   private setDomFlag(key: string, value: string): void {

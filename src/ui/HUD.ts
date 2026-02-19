@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { HUD as HUD_CONFIG } from "../data/balance";
+import { tokenLessons, type TokenLesson, type TokenLessonReason } from "../data/tokenLessons";
 
 export class HUD {
   private readonly scene: Phaser.Scene;
@@ -19,6 +20,17 @@ export class HUD {
   private readonly bossBarBg: Phaser.GameObjects.Rectangle;
   private readonly bossBarFill: Phaser.GameObjects.Rectangle;
   private readonly bossLabel: Phaser.GameObjects.Text;
+
+  private readonly tokenTutorContainer: Phaser.GameObjects.Container;
+  private readonly tokenTutorBg: Phaser.GameObjects.Rectangle;
+  private readonly tokenTutorTitle: Phaser.GameObjects.Text;
+  private readonly tokenTutorBody: Phaser.GameObjects.Text;
+  private readonly tokenTutorExample: Phaser.GameObjects.Text;
+  private tokenTutorVisibleUntil = 0;
+  private tokenTutorLastLessonId: string | null = null;
+  private tokenTutorCooldownUntil = 0;
+  private tokenTutorHideTimer: Phaser.Time.TimerEvent | null = null;
+  private spaceDismissHandler: (() => void) | null = null;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -88,6 +100,51 @@ export class HUD {
     });
     this.checkpointText.setOrigin(0.5, 0);
 
+    const tutorPanelWidth = 560;
+    const tutorPanelHeight = 126;
+    this.tokenTutorBg = scene.add
+      .rectangle(0, 0, tutorPanelWidth, tutorPanelHeight, 0x08221c, 0.92)
+      .setOrigin(0.5)
+      .setStrokeStyle(2, 0x79e8c3, 0.9)
+      .setInteractive({ useHandCursor: true });
+
+    this.tokenTutorTitle = scene.add.text(-tutorPanelWidth * 0.5 + 16, -46, "Token Tutor", {
+      color: "#d9fff2",
+      fontSize: "22px",
+      fontStyle: "bold",
+      stroke: "#03170f",
+      strokeThickness: 3,
+      wordWrap: { width: tutorPanelWidth - 32 },
+    }).setOrigin(0, 0);
+
+    this.tokenTutorBody = scene.add.text(-tutorPanelWidth * 0.5 + 16, -14, "", {
+      color: "#f2fff8",
+      fontSize: "17px",
+      stroke: "#03170f",
+      strokeThickness: 2,
+      wordWrap: { width: tutorPanelWidth - 32 },
+    }).setOrigin(0, 0);
+
+    this.tokenTutorExample = scene.add.text(-tutorPanelWidth * 0.5 + 16, 32, "", {
+      color: "#b7ffe3",
+      fontSize: "16px",
+      stroke: "#03170f",
+      strokeThickness: 2,
+      wordWrap: { width: tutorPanelWidth - 32 },
+    }).setOrigin(0, 0);
+
+    this.tokenTutorContainer = scene.add.container(scene.scale.width * 0.5, 110, [
+      this.tokenTutorBg,
+      this.tokenTutorTitle,
+      this.tokenTutorBody,
+      this.tokenTutorExample,
+    ]);
+    this.tokenTutorContainer.setVisible(false);
+    this.tokenTutorContainer.alpha = 0;
+    this.tokenTutorContainer.setDepth(58);
+    this.tokenTutorContainer.setScrollFactor(0);
+    this.tokenTutorBg.on("pointerdown", () => this.dismissTokenLesson());
+
     this.bossBarBg = scene.add.rectangle(scene.scale.width * 0.5, 54, 480, 16, 0x1a1d2f, 0.92).setOrigin(0.5, 0);
     this.bossBarFill = scene.add.rectangle(scene.scale.width * 0.5 - 238, 56, 476, 12, 0xea5f8c, 0.95).setOrigin(0, 0);
     this.bossLabel = scene.add.text(scene.scale.width * 0.5, 28, "Boss Phase 1", {
@@ -117,6 +174,15 @@ export class HUD {
       entry.setScrollFactor(0);
       entry.setDepth(50);
     });
+
+    if (scene.input.keyboard) {
+      this.spaceDismissHandler = () => {
+        if (this.tokenTutorContainer.visible) {
+          this.dismissTokenLesson();
+        }
+      };
+      scene.input.keyboard.on("keydown-SPACE", this.spaceDismissHandler);
+    }
 
     this.updateBoss(false, 1, 1);
   }
@@ -190,7 +256,89 @@ export class HUD {
     });
   }
 
+  showTokenLesson(reason: TokenLessonReason, nowMs: number): void {
+    if (nowMs < this.tokenTutorCooldownUntil) {
+      return;
+    }
+    if (this.tokenTutorContainer.visible && nowMs < this.tokenTutorVisibleUntil) {
+      return;
+    }
+
+    const lesson = this.pickTokenLesson(reason);
+    this.tokenTutorLastLessonId = lesson.id;
+    this.tokenTutorVisibleUntil = nowMs + 4000;
+    this.tokenTutorCooldownUntil = nowMs + 8000;
+
+    this.tokenTutorTitle.setText(lesson.title);
+    this.tokenTutorBody.setText(lesson.body);
+    if (lesson.example) {
+      this.tokenTutorExample.setVisible(true);
+      this.tokenTutorExample.setText(`Example: ${lesson.example}`);
+      this.tokenTutorBg.height = 126;
+    } else {
+      this.tokenTutorExample.setVisible(false);
+      this.tokenTutorExample.setText("");
+      this.tokenTutorBg.height = 102;
+    }
+
+    this.scene.tweens.killTweensOf(this.tokenTutorContainer);
+    if (this.tokenTutorHideTimer) {
+      this.tokenTutorHideTimer.remove(false);
+      this.tokenTutorHideTimer = null;
+    }
+
+    this.tokenTutorContainer.setVisible(true);
+    this.tokenTutorContainer.alpha = 0;
+    this.scene.tweens.add({
+      targets: this.tokenTutorContainer,
+      alpha: 1,
+      duration: 140,
+      ease: "Sine.Out",
+    });
+
+    this.tokenTutorHideTimer = this.scene.time.delayedCall(4000, () => this.dismissTokenLesson());
+  }
+
+  dismissTokenLesson(): void {
+    if (!this.tokenTutorContainer.visible) {
+      return;
+    }
+
+    this.tokenTutorVisibleUntil = 0;
+    this.scene.tweens.killTweensOf(this.tokenTutorContainer);
+    if (this.tokenTutorHideTimer) {
+      this.tokenTutorHideTimer.remove(false);
+      this.tokenTutorHideTimer = null;
+    }
+
+    this.scene.tweens.add({
+      targets: this.tokenTutorContainer,
+      alpha: 0,
+      duration: 130,
+      onComplete: () => {
+        this.tokenTutorContainer.setVisible(false);
+      },
+    });
+  }
+
+  private pickTokenLesson(reason: TokenLessonReason): TokenLesson {
+    const tagged = tokenLessons.filter((lesson) => !lesson.tags || lesson.tags.length === 0 || lesson.tags.includes(reason));
+    const reasonPool = tagged.length > 0 ? tagged : tokenLessons;
+    const nonRepeat = reasonPool.filter((lesson) => lesson.id !== this.tokenTutorLastLessonId);
+    const finalPool = nonRepeat.length > 0 ? nonRepeat : reasonPool;
+    const index = Phaser.Math.Between(0, finalPool.length - 1);
+    return finalPool[index];
+  }
+
   destroy(): void {
+    if (this.spaceDismissHandler && this.scene.input.keyboard) {
+      this.scene.input.keyboard.off("keydown-SPACE", this.spaceDismissHandler);
+      this.spaceDismissHandler = null;
+    }
+    if (this.tokenTutorHideTimer) {
+      this.tokenTutorHideTimer.remove(false);
+      this.tokenTutorHideTimer = null;
+    }
     this.healthBg.destroy();
     this.healthFill.destroy();
     this.quotaText.destroy();
@@ -205,5 +353,6 @@ export class HUD {
     this.bossBarBg.destroy();
     this.bossBarFill.destroy();
     this.bossLabel.destroy();
+    this.tokenTutorContainer.destroy(true);
   }
 }
