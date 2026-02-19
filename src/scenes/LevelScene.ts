@@ -11,6 +11,7 @@ import { PlayerFishFairy } from "../entities/PlayerFishFairy";
 import { Projectile } from "../entities/Projectile";
 import { SeedFountainGhost } from "../entities/SeedFountainGhost";
 import { SeedPickup } from "../entities/SeedPickup";
+import { SpinArena } from "../entities/SpinArena";
 import { Wormhole } from "../entities/Wormhole";
 import { AudioSystem } from "../systems/AudioSystem";
 import { GlitterComboSystem, tapsToAction, type GlitterComboAction } from "../systems/glitterCombo";
@@ -18,7 +19,7 @@ import { InputSystem, type InputSnapshot } from "../systems/InputSystem";
 import { SaveSystem } from "../systems/SaveSystem";
 import { SpawnSystem } from "../systems/SpawnSystem";
 import { checkpointSeedCost, getDifficultyParams, scaleQuota, scaleTimeLimit, type DifficultyParams } from "../systems/difficulty";
-import type { LevelDefinition, SeedFountainGhostRule } from "../types/gameTypes";
+import type { LevelDefinition, SeedFountainGhostRule, SpinArenaRule } from "../types/gameTypes";
 import { GAME_EVENTS } from "../types/gameTypes";
 import type { LevelDebugSnapshot } from "../types/debugTypes";
 import { HUD } from "../ui/HUD";
@@ -115,8 +116,15 @@ export class LevelScene extends Phaser.Scene {
   private debugConsecutiveStallFrames = 0;
   private debugWorstConsecutiveStallFrames = 0;
   private nextEnemySeedDrainAt = 0;
+  private halfQuotaGlowActive = false;
+  private quotaReadyShineActive = false;
+  private nextQuotaSparkleAt = 0;
   private nextSeedGhostEventIndex = 0;
   private nextSeedGhostHintAt = 0;
+  private spinArenaRules: SpinArenaRule[] = [];
+  private nextSpinArenaRuleIndex = 0;
+  private readonly activeSpinArenas: SpinArena[] = [];
+  private nextSpinArenaHintAt = 0;
 
   private timeLeftSec: number | null = null;
 
@@ -183,8 +191,16 @@ export class LevelScene extends Phaser.Scene {
     this.debugConsecutiveStallFrames = 0;
     this.debugWorstConsecutiveStallFrames = 0;
     this.nextEnemySeedDrainAt = 0;
+    this.halfQuotaGlowActive = false;
+    this.quotaReadyShineActive = false;
+    this.nextQuotaSparkleAt = 0;
     this.nextSeedGhostEventIndex = 0;
     this.nextSeedGhostHintAt = 0;
+    this.spinArenaRules = [...(this.level.spinArenas ?? [])].sort((a, b) => a.triggerX - b.triggerX);
+    this.nextSpinArenaRuleIndex = 0;
+    this.nextSpinArenaHintAt = 0;
+    this.activeSpinArenas.forEach((arena) => arena.destroy());
+    this.activeSpinArenas.length = 0;
 
     this.boss = null;
     this.bossSpawned = false;
@@ -228,6 +244,8 @@ export class LevelScene extends Phaser.Scene {
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.events.off("SNAKE_TAIL_BITE", this.handleSnakeTailBite, this);
+      this.activeSpinArenas.forEach((arena) => arena.destroy());
+      this.activeSpinArenas.length = 0;
       this.inputSystem.destroy();
       this.audioSystem.destroy();
       this.hud.destroy();
@@ -288,10 +306,15 @@ export class LevelScene extends Phaser.Scene {
     }
 
     this.player.updateControl(input, deltaSec, time);
+    this.updateQuotaReadyShineState(time);
 
     if (time < this.shieldUntil) {
       this.player.setTint(0xa4f3ff);
       this.updateShieldAura(time);
+    } else if (!this.player.isInvulnerable(time) && this.collected >= this.effectiveQuota) {
+      this.player.setTint(0xfff2ad);
+    } else if (!this.player.isInvulnerable(time) && this.halfQuotaGlowActive) {
+      this.player.setTint(0xff8ed6);
     } else if (!this.player.isInvulnerable(time)) {
       this.player.clearTint();
     }
@@ -308,6 +331,7 @@ export class LevelScene extends Phaser.Scene {
       });
       return true;
     });
+    this.updateSpinArenas(time, deltaSec);
     this.updateEnemySeedDrain(time);
     this.updateSeedFountainGhosts(time);
 
@@ -477,6 +501,7 @@ export class LevelScene extends Phaser.Scene {
         glitterShots: this.glitterShots.countActive(true),
         pickups: this.pickups.countActive(true),
         seedFountainGhosts: this.seedFountainGhosts.countActive(true),
+        spinArenas: this.activeSpinArenas.length,
         bossAlive: Boolean(this.boss && this.boss.isAlive()),
         bossHpRatio: this.boss && this.boss.isAlive() ? this.boss.getHpRatio() : null,
         bossPhase: this.boss && this.boss.isAlive() ? this.boss.getPhase() : null,
@@ -1173,6 +1198,94 @@ export class LevelScene extends Phaser.Scene {
     this.hud.flashCheckpoint(`Seed Fountain! ${reward} seeds appeared`);
   }
 
+  private updateSpinArenas(time: number, deltaSec: number): void {
+    while (this.nextSpinArenaRuleIndex < this.spinArenaRules.length) {
+      const rule = this.spinArenaRules[this.nextSpinArenaRuleIndex];
+      if (this.player.x < rule.triggerX) {
+        break;
+      }
+      this.nextSpinArenaRuleIndex += 1;
+
+      const arena = new SpinArena(this, rule, this.level.biome);
+      this.activeSpinArenas.push(arena);
+      if (time >= this.nextSpinArenaHintAt) {
+        this.hud.flashCheckpoint("Spin zone active! Seeds whirl and predators spiral");
+        this.nextSpinArenaHintAt = time + 700;
+      }
+    }
+
+    if (this.activeSpinArenas.length === 0) {
+      return;
+    }
+
+    for (const arena of this.activeSpinArenas) {
+      arena.update(deltaSec);
+    }
+
+    for (const entry of this.pickups.getChildren()) {
+      const pickup = entry as SeedPickup;
+      if (!pickup.active) {
+        continue;
+      }
+      for (const arena of this.activeSpinArenas) {
+        if (!arena.contains(pickup.x, pickup.y)) {
+          continue;
+        }
+        const dx = pickup.x - arena.x;
+        const dy = pickup.y - arena.y;
+        const distance = Math.max(1, Math.hypot(dx, dy));
+        const angle = Math.atan2(dy, dx) + arena.seedSpinRate * deltaSec;
+        const orbitRadius = Phaser.Math.Clamp(distance, 26, arena.radius - 10);
+        pickup.setPosition(
+          arena.x + Math.cos(angle) * orbitRadius,
+          arena.y + Math.sin(angle) * orbitRadius,
+        );
+        break;
+      }
+    }
+
+    for (const entry of this.predators.getChildren()) {
+      const predator = entry as FlashPredator;
+      if (!predator.active) {
+        continue;
+      }
+      const body = predator.body as Phaser.Physics.Arcade.Body | null;
+      if (!body) {
+        continue;
+      }
+
+      for (const arena of this.activeSpinArenas) {
+        if (!arena.contains(predator.x, predator.y)) {
+          continue;
+        }
+
+        const dx = predator.x - arena.x;
+        const dy = predator.y - arena.y;
+        const distance = Math.max(1, Math.hypot(dx, dy));
+        const tangentX = -dy / distance;
+        const tangentY = dx / distance;
+
+        body.velocity.x += tangentX * arena.predatorSwirl * deltaSec;
+        body.velocity.y += tangentY * arena.predatorSwirl * deltaSec;
+
+        const chaseDx = this.player.x - predator.x;
+        const chaseDy = this.player.y - predator.y;
+        const chaseDistance = Math.max(1, Math.hypot(chaseDx, chaseDy));
+        body.velocity.x += (chaseDx / chaseDistance) * 90 * deltaSec;
+        body.velocity.y += (chaseDy / chaseDistance) * 90 * deltaSec;
+
+        const maxSpeed = 560;
+        const speed = Math.hypot(body.velocity.x, body.velocity.y);
+        if (speed > maxSpeed) {
+          const scale = maxSpeed / speed;
+          body.velocity.x *= scale;
+          body.velocity.y *= scale;
+        }
+        break;
+      }
+    }
+  }
+
   private updateEnemySeedDrain(time: number): void {
     const rule = this.level.seedDrain;
     if (!rule || this.seedCount <= 0) {
@@ -1352,6 +1465,75 @@ export class LevelScene extends Phaser.Scene {
     } else {
       this.exitGate.setAlpha(0.85);
       this.exitGate.setTint(0x666666);
+    }
+  }
+
+  private updateQuotaReadyShineState(time: number): void {
+    const halfwayQuota = Math.max(1, Math.ceil(this.effectiveQuota * 0.5));
+    const halfwayReady = this.collected >= halfwayQuota;
+    const quotaReady = this.collected >= this.effectiveQuota;
+
+    const targetScale = quotaReady ? 1.24 : halfwayReady ? 1.12 : 1;
+    const nextScale = Phaser.Math.Linear(this.player.scaleX, targetScale, 0.22);
+    this.player.setScale(nextScale);
+
+    if (halfwayReady && !this.halfQuotaGlowActive) {
+      this.halfQuotaGlowActive = true;
+      this.hud.flashCheckpoint("Halfway! Fairy form awakened");
+      const pulse = this.add.circle(this.player.x, this.player.y, 10, 0xff8ed6, 0.24);
+      pulse.setDepth(18);
+      this.tweens.add({
+        targets: pulse,
+        radius: 68,
+        alpha: 0,
+        duration: 260,
+        onComplete: () => pulse.destroy(),
+      });
+    }
+
+    if (quotaReady && !this.quotaReadyShineActive) {
+      this.quotaReadyShineActive = true;
+      this.hud.flashCheckpoint("Quota met! You are shining");
+    }
+
+    if (time >= this.nextQuotaSparkleAt) {
+      if (quotaReady) {
+        this.nextQuotaSparkleAt = time + 120;
+        const sparkle = this.add.rectangle(
+          this.player.x + Phaser.Math.Between(-14, 14),
+          this.player.y + Phaser.Math.Between(-14, 14),
+          3,
+          3,
+          0xfff6b5,
+          0.9,
+        );
+        sparkle.setDepth(18);
+        this.tweens.add({
+          targets: sparkle,
+          alpha: 0,
+          scale: 2,
+          duration: 180,
+          onComplete: () => sparkle.destroy(),
+        });
+      } else if (halfwayReady) {
+        this.nextQuotaSparkleAt = time + 210;
+        const sparkle = this.add.rectangle(
+          this.player.x + Phaser.Math.Between(-12, 12),
+          this.player.y + Phaser.Math.Between(-12, 12),
+          2,
+          2,
+          0xff9de0,
+          0.85,
+        );
+        sparkle.setDepth(18);
+        this.tweens.add({
+          targets: sparkle,
+          alpha: 0,
+          scale: 1.7,
+          duration: 160,
+          onComplete: () => sparkle.destroy(),
+        });
+      }
     }
   }
 

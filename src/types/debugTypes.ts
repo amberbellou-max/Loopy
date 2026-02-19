@@ -79,6 +79,7 @@ export interface LevelDebugSnapshot {
     glitterShots: number;
     pickups: number;
     seedFountainGhosts: number;
+    spinArenas: number;
     bossAlive: boolean;
     bossHpRatio: number | null;
     bossPhase: 1 | 2 | 3 | null;

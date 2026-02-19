@@ -14,6 +14,7 @@ Loopy is a Phaser 3 + TypeScript side-scrolling game with 19 handcrafted levels.
   - `Serpent Stalker`: snake-like hunter with a trailing body. Bait it into its own tail to make it self-destruct.
 - You can still use Space-bar combat on serpents (shots/bomb/shield), but tail-trap kills are rewarded.
 - Seed Fountain Ghosts now blink in on selected chapters, vanish quickly, and drop burst seed showers (`3/6/9`) if caught in time.
+- Spin Arena zones now appear in select chapters: the zone itself orbits, nearby seed pickups spin, and predators spiral while still chasing you.
 - `Ocean Wormhole` hazard: if it grabs you, the HUD prompts a breakaway event.
   - Escape rule: press `Space` while steering away with arrows/WASD.
   - You must tap `Space` and move away from its dark center to break free.

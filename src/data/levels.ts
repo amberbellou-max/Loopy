@@ -4,6 +4,7 @@ import type {
   LevelDefinition,
   PredatorSpawnRule,
   SeedFountainGhostRule,
+  SpinArenaRule,
   WormholeRule,
 } from "../types/gameTypes";
 
@@ -87,6 +88,26 @@ const seedGhost = (
   y,
   rewardSeeds,
   visibleMs,
+});
+
+const spinArena = (
+  triggerX: number,
+  x: number,
+  y: number,
+  radius: number,
+  orbitRadius: number,
+  orbitSpeed: number,
+  seedSpinRate: number,
+  predatorSwirl: number,
+): SpinArenaRule => ({
+  triggerX,
+  x,
+  y,
+  radius,
+  orbitRadius,
+  orbitSpeed,
+  seedSpinRate,
+  predatorSwirl,
 });
 
 export const LEVELS: LevelDefinition[] = [
@@ -212,6 +233,9 @@ export const LEVELS: LevelDefinition[] = [
       hazard("vine", 2340, 560, 170, 35, 17),
       hazard("vine", 3020, 560, 140, 34, 18),
     ],
+    spinArenas: [
+      spinArena(1540, 1720, 300, 170, 72, 0.78, 2.7, 220),
+    ],
     milestone: false,
   },
   {
@@ -239,6 +263,9 @@ export const LEVELS: LevelDefinition[] = [
     hazards: [
       hazard("vine", 2920, 560, 170, 35, 18),
       hazard("vine", 3460, 560, 140, 34, 19),
+    ],
+    spinArenas: [
+      spinArena(1820, 2060, 280, 178, 86, 0.84, 2.9, 235),
     ],
     seedFountainGhosts: [
       seedGhost(1460, 1520, 270, 3, 1800),
@@ -351,6 +378,9 @@ export const LEVELS: LevelDefinition[] = [
       hazard("sand_spike", 2320, 560, 160, 36, 20),
       hazard("sand_spike", 4140, 560, 160, 36, 20),
     ],
+    spinArenas: [
+      spinArena(2100, 2360, 290, 190, 98, 0.92, 3.1, 250),
+    ],
     milestone: false,
   },
   {
@@ -378,6 +408,9 @@ export const LEVELS: LevelDefinition[] = [
     hazards: [
       hazard("sand_spike", 2480, 560, 180, 40, 21),
       hazard("sand_spike", 3550, 560, 180, 40, 21),
+    ],
+    spinArenas: [
+      spinArena(2520, 2800, 270, 192, 102, 0.96, 3.2, 260),
     ],
     milestone: false,
   },
@@ -574,6 +607,9 @@ export const LEVELS: LevelDefinition[] = [
       radius: 250,
       consumePickups: true,
     },
+    spinArenas: [
+      spinArena(3240, 3520, 270, 196, 116, 1.02, 3.35, 272),
+    ],
     seedFountainGhosts: [
       seedGhost(2280, 2360, 250, 6, 1650),
       seedGhost(4660, 4740, 230, 9, 1500),
@@ -618,6 +654,9 @@ export const LEVELS: LevelDefinition[] = [
       radius: 280,
       consumePickups: true,
     },
+    spinArenas: [
+      spinArena(3440, 3820, 260, 205, 124, 1.08, 3.5, 286),
+    ],
     seedFountainGhosts: [
       seedGhost(2480, 2560, 250, 6, 1600),
       seedGhost(5060, 5140, 220, 9, 1450),
@@ -664,6 +703,10 @@ export const LEVELS: LevelDefinition[] = [
       radius: 300,
       consumePickups: true,
     },
+    spinArenas: [
+      spinArena(3520, 3920, 255, 212, 132, 1.16, 3.8, 304),
+      spinArena(5440, 5840, 240, 224, 148, 1.24, 4, 325),
+    ],
     seedFountainGhosts: [
       seedGhost(2620, 2700, 250, 3, 1600),
       seedGhost(4560, 4640, 230, 6, 1500),

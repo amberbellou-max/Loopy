@@ -57,6 +57,17 @@ export interface SeedFountainGhostRule {
   visibleMs?: number;
 }
 
+export interface SpinArenaRule {
+  triggerX: number;
+  x: number;
+  y: number;
+  radius: number;
+  orbitRadius: number;
+  orbitSpeed: number;
+  seedSpinRate: number;
+  predatorSwirl: number;
+}
+
 export interface LevelDefinition {
   id: number;
   biome: Biome;
@@ -71,6 +82,7 @@ export interface LevelDefinition {
   hazards: HazardRule[];
   seedDrain?: SeedDrainRule;
   seedFountainGhosts?: SeedFountainGhostRule[];
+  spinArenas?: SpinArenaRule[];
   milestone: boolean;
   unlocksAbility?: AbilityType;
 }

@@ -50,4 +50,10 @@ describe("level data", () => {
       }
     }
   });
+
+  test("spin arenas appear in early and late chapters", () => {
+    const spinLevels = LEVELS.filter((level) => (level.spinArenas?.length ?? 0) > 0).map((level) => level.id);
+    expect(spinLevels.some((id) => id <= 11)).toBe(true);
+    expect(spinLevels.some((id) => id >= 17)).toBe(true);
+  });
 });
