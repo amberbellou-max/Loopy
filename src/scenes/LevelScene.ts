@@ -1842,21 +1842,21 @@ export class LevelScene extends Phaser.Scene {
       const x = 220 + i * (this.levelWidth / 9);
       const y = 130 + (i % 3) * 78;
       const radius = 90 + (i % 4) * 24;
-      this.add.circle(x, y, radius, fogColor, 0.24).setDepth(-15);
+      this.add.circle(x, y, radius, fogColor, 0.2).setDepth(-15);
     }
 
     for (let i = 0; i < 80; i += 1) {
       const x = Phaser.Math.Between(20, this.levelWidth - 20);
       const y = Phaser.Math.Between(40, 260);
-      this.add.rectangle(x, y, 2, 2, sparkleColor, 0.35).setDepth(-12);
+      this.add.rectangle(x, y, 2, 2, sparkleColor, 0.4).setDepth(-12);
     }
 
-    this.add.rectangle(this.levelWidth * 0.5, 620, this.levelWidth, 80, groundColor, 0.9).setDepth(-5);
+    this.add.rectangle(this.levelWidth * 0.5, 620, this.levelWidth, 80, groundColor, 0.86).setDepth(-5);
 
     for (let i = 0; i < 70; i += 1) {
       const x = i * (this.levelWidth / 70) + Phaser.Math.Between(-10, 10);
       const y = Phaser.Math.Between(560, 620);
-      this.add.rectangle(x, y, Phaser.Math.Between(4, 10), Phaser.Math.Between(16, 28), floraColor, 0.82).setDepth(-2);
+      this.add.rectangle(x, y, Phaser.Math.Between(4, 10), Phaser.Math.Between(16, 28), floraColor, 0.76).setDepth(-2);
     }
   }
 
@@ -1891,13 +1891,13 @@ export class LevelScene extends Phaser.Scene {
 
     const sky = chapterSkyColors[(Math.max(1, levelId) - 1) % chapterSkyColors.length];
     const fogTarget = biome === "jungle" ? 0xa8ffe8 : 0xfff6b6;
-    const groundTarget = biome === "jungle" ? 0x1d6f54 : 0x8f642e;
-    const floraTarget = biome === "jungle" ? 0x62ff9a : 0xffc96d;
+    const groundTarget = biome === "jungle" ? 0x175a43 : 0x7f5524;
+    const floraTarget = biome === "jungle" ? 0x70ff8d : 0xffc44b;
 
-    const fog = this.blendColor(sky, fogTarget, 0.58);
-    const sparkle = this.blendColor(fog, 0xffffff, 0.45);
-    const ground = this.blendColor(sky, groundTarget, 0.62);
-    const flora = this.blendColor(fog, floraTarget, 0.64);
+    const fog = this.blendColor(sky, fogTarget, 0.5);
+    const sparkle = this.blendColor(fog, 0xffffff, 0.5);
+    const ground = this.blendColor(sky, groundTarget, 0.68);
+    const flora = this.blendColor(fog, floraTarget, 0.58);
 
     return {
       sky,

@@ -21,9 +21,9 @@ export class PreloadScene extends Phaser.Scene {
       ".cffffc.",
       "..cccc..",
     ], {
-      c: "#0f4c6d",
-      f: "#2ee8ff",
-      7: "#ff9edc",
+      c: "#083a66",
+      f: "#31f3ff",
+      7: "#ff6ed0",
     });
 
     this.drawPixelTexture("food_river_fish", [
@@ -36,8 +36,8 @@ export class PreloadScene extends Phaser.Scene {
       "...bb...",
       "........",
     ], {
-      b: "#4aa5ff",
-      9: "#d2f3ff",
+      b: "#1f86ff",
+      9: "#bdeeff",
     });
 
     this.drawPixelTexture("food_earth_hopper_fish", [
@@ -50,8 +50,8 @@ export class PreloadScene extends Phaser.Scene {
       "..g..g..",
       ".g....g.",
     ], {
-      g: "#5fba3f",
-      8: "#ccff7a",
+      g: "#3fa827",
+      8: "#d2ff63",
     });
 
     this.drawPixelTexture("food_grass_bite", [
@@ -64,8 +64,8 @@ export class PreloadScene extends Phaser.Scene {
       "........",
       "........",
     ], {
-      m: "#43c96f",
-      6: "#b6ffd7",
+      m: "#2dcf6a",
+      6: "#88ffd0",
     });
 
     this.drawPixelTexture("food_locust", [
@@ -78,8 +78,8 @@ export class PreloadScene extends Phaser.Scene {
       ".y....y.",
       "........",
     ], {
-      y: "#ffc74c",
-      5: "#fff78a",
+      y: "#ffbb28",
+      5: "#fff56a",
     });
 
     this.drawPixelTexture("predator", [
@@ -93,7 +93,7 @@ export class PreloadScene extends Phaser.Scene {
       "..rrrr..",
     ], {
       r: "#ff3f6d",
-      1: "#ffe2b8",
+      1: "#ffe8c8",
     });
 
     this.drawPixelTexture("enemy_rift_skimmer", [
@@ -107,8 +107,8 @@ export class PreloadScene extends Phaser.Scene {
       ".t....t.",
     ], {
       t: "#1e66d9",
-      2: "#70dcff",
-      f: "#eafcff",
+      2: "#57d7ff",
+      f: "#e7fbff",
     });
 
     this.drawPixelTexture("enemy_arcane_totem", [
@@ -122,9 +122,9 @@ export class PreloadScene extends Phaser.Scene {
       "...uu...",
     ], {
       u: "#4f30ef",
-      4: "#b39cff",
-      a: "#ffe9ff",
-      1: "#101a35",
+      4: "#a08aff",
+      a: "#ffdfff",
+      1: "#0d1732",
     });
 
     this.drawPixelTexture("enemy_snake_head", [
@@ -138,7 +138,7 @@ export class PreloadScene extends Phaser.Scene {
       "..ssss..",
     ], {
       s: "#2f9e43",
-      7: "#9fff62",
+      7: "#a9ff4a",
       d: "#195829",
       1: "#0f170f",
     });
@@ -152,7 +152,7 @@ export class PreloadScene extends Phaser.Scene {
       "..gg..",
     ], {
       g: "#2c8e3e",
-      8: "#9cff58",
+      8: "#8aff3a",
     });
 
     this.drawPixelTexture("wormhole_core", [
@@ -166,7 +166,7 @@ export class PreloadScene extends Phaser.Scene {
       "...pp...",
     ], {
       p: "#3a1fd4",
-      2: "#7c5dff",
+      2: "#8f63ff",
       a: "#070513",
     });
 
@@ -181,7 +181,7 @@ export class PreloadScene extends Phaser.Scene {
       "..qqqq..",
     ], {
       q: "#1168e9",
-      7: "#74dcff",
+      7: "#6de2ff",
       k: "#0d2740",
       0: "#03060f",
     });
@@ -195,7 +195,7 @@ export class PreloadScene extends Phaser.Scene {
       "..oo..",
     ], {
       o: "#ff6f2d",
-      e: "#ffe2a0",
+      e: "#ffd98e",
     });
 
     this.drawPixelTexture("projectile_blackhole", [
@@ -207,7 +207,7 @@ export class PreloadScene extends Phaser.Scene {
       "..kk..",
     ], {
       k: "#0d1220",
-      4: "#4d5a77",
+      4: "#7688ad",
     });
 
     this.drawPixelTexture("glitter_shot", [
@@ -220,8 +220,8 @@ export class PreloadScene extends Phaser.Scene {
       "....s...",
       "........",
     ], {
-      s: "#79f5ff",
-      9: "#fff2ad",
+      s: "#86f7ff",
+      9: "#fff6c9",
     });
 
     this.drawPixelTexture("pickup_seed", [
@@ -234,8 +234,8 @@ export class PreloadScene extends Phaser.Scene {
       "....n...",
       "........",
     ], {
-      n: "#43c769",
-      3: "#c5ffd2",
+      n: "#23bf5a",
+      3: "#e4ff92",
     });
 
     this.drawPixelTexture("pickup_universe_seed", [
@@ -248,8 +248,8 @@ export class PreloadScene extends Phaser.Scene {
       "..u...u.",
       "........",
     ], {
-      u: "#6e5bff",
-      4: "#dbc4ff",
+      u: "#5939ff",
+      4: "#f2b8ff",
     });
 
     this.drawPixelTexture("pickup_life", [
@@ -262,8 +262,8 @@ export class PreloadScene extends Phaser.Scene {
       "...hh...",
       "........",
     ], {
-      h: "#c9415a",
-      H: "#ffb7c0",
+      h: "#ff3e63",
+      H: "#ffd0de",
     });
 
     this.drawPixelTexture("seed_fountain_ghost", [
@@ -276,10 +276,10 @@ export class PreloadScene extends Phaser.Scene {
       "..g66g..",
       "...gg...",
     ], {
-      g: "#88f6ff",
-      6: "#cbfbff",
+      g: "#70efff",
+      6: "#bff8ff",
       w: "#f5feff",
-      1: "#2d4972",
+      1: "#233f67",
     });
 
     this.drawPixelTexture("boss_core", [
@@ -295,7 +295,7 @@ export class PreloadScene extends Phaser.Scene {
       "....bb....",
     ], {
       b: "#2f7bb0",
-      8: "#87e4ff",
+      8: "#90eeff",
       7: "#f0feff",
       a: "#8d6bff",
       1: "#101828",
