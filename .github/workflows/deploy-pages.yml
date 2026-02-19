@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -33,6 +33,25 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Publish dist to gh-pages fallback branch
+        if: github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          FALLBACK_DIR="$(mktemp -d)"
+          cp -R dist/. "$FALLBACK_DIR/"
+          touch "$FALLBACK_DIR/.nojekyll"
+          cd "$FALLBACK_DIR"
+          git init
+          git checkout -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fallback deploy ${GITHUB_SHA}"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin gh-pages
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

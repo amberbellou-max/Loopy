@@ -77,7 +77,7 @@ Loopy is a Phaser 3 + TypeScript side-scrolling game with 19 handcrafted levels.
 
 ## Deployment
 - Primary (recommended): GitHub Pages source set to `GitHub Actions`.
-- Fallback (branch mode): a backup workflow publishes built files to `gh-pages`.
+- Fallback (branch mode): the main deploy workflow also publishes built files to `gh-pages`.
 - If the site ever serves `/src/main.ts` again, set Pages to:
   - Source: `Deploy from a branch`
   - Branch: `gh-pages` / `root`
