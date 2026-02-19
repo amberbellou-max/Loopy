@@ -21,9 +21,9 @@ export class PreloadScene extends Phaser.Scene {
       ".cffffc.",
       "..cccc..",
     ], {
-      c: "#34b7a9",
-      f: "#8bffe0",
-      7: "#f4fff8",
+      c: "#0f4c6d",
+      f: "#2ee8ff",
+      7: "#ff9edc",
     });
 
     this.drawPixelTexture("food_river_fish", [
@@ -92,8 +92,8 @@ export class PreloadScene extends Phaser.Scene {
       ".rr11rr.",
       "..rrrr..",
     ], {
-      r: "#ff5c6c",
-      1: "#ffd2b1",
+      r: "#ff3f6d",
+      1: "#ffe2b8",
     });
 
     this.drawPixelTexture("enemy_rift_skimmer", [
@@ -106,9 +106,9 @@ export class PreloadScene extends Phaser.Scene {
       "..t..t..",
       ".t....t.",
     ], {
-      t: "#46a2ff",
-      2: "#b3ecff",
-      f: "#f2fbff",
+      t: "#1e66d9",
+      2: "#70dcff",
+      f: "#eafcff",
     });
 
     this.drawPixelTexture("enemy_arcane_totem", [
@@ -121,10 +121,10 @@ export class PreloadScene extends Phaser.Scene {
       "..u44u..",
       "...uu...",
     ], {
-      u: "#6c57ff",
-      4: "#c9b8ff",
-      a: "#f3f0ff",
-      1: "#15203b",
+      u: "#4f30ef",
+      4: "#b39cff",
+      a: "#ffe9ff",
+      1: "#101a35",
     });
 
     this.drawPixelTexture("enemy_snake_head", [
@@ -137,10 +137,10 @@ export class PreloadScene extends Phaser.Scene {
       ".s7777s.",
       "..ssss..",
     ], {
-      s: "#57cd66",
-      7: "#bcff8c",
-      d: "#2f7f3b",
-      1: "#17211a",
+      s: "#2f9e43",
+      7: "#9fff62",
+      d: "#195829",
+      1: "#0f170f",
     });
 
     this.drawPixelTexture("enemy_snake_segment", [
@@ -151,8 +151,8 @@ export class PreloadScene extends Phaser.Scene {
       ".g88g.",
       "..gg..",
     ], {
-      g: "#3aaa4c",
-      8: "#9eff7a",
+      g: "#2c8e3e",
+      8: "#9cff58",
     });
 
     this.drawPixelTexture("wormhole_core", [
@@ -165,9 +165,9 @@ export class PreloadScene extends Phaser.Scene {
       "..p22p..",
       "...pp...",
     ], {
-      p: "#5f3cff",
-      2: "#9a7aff",
-      a: "#0d0a1f",
+      p: "#3a1fd4",
+      2: "#7c5dff",
+      a: "#070513",
     });
 
     this.drawPixelTexture("wormhole_ocean_core", [
@@ -180,10 +180,10 @@ export class PreloadScene extends Phaser.Scene {
       ".q7777q.",
       "..qqqq..",
     ], {
-      q: "#2f8cff",
-      7: "#7ddcff",
-      k: "#17314e",
-      0: "#050910",
+      q: "#1168e9",
+      7: "#74dcff",
+      k: "#0d2740",
+      0: "#03060f",
     });
 
     this.drawPixelTexture("projectile_enemy", [
@@ -194,8 +194,8 @@ export class PreloadScene extends Phaser.Scene {
       ".oeeo.",
       "..oo..",
     ], {
-      o: "#ff8f3e",
-      e: "#fff0ab",
+      o: "#ff6f2d",
+      e: "#ffe2a0",
     });
 
     this.drawPixelTexture("projectile_blackhole", [
@@ -220,8 +220,8 @@ export class PreloadScene extends Phaser.Scene {
       "....s...",
       "........",
     ], {
-      s: "#6de6ff",
-      9: "#fffbe9",
+      s: "#79f5ff",
+      9: "#fff2ad",
     });
 
     this.drawPixelTexture("pickup_seed", [

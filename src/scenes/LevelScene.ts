@@ -309,12 +309,20 @@ export class LevelScene extends Phaser.Scene {
     this.updateQuotaReadyShineState(time);
 
     if (time < this.shieldUntil) {
-      this.player.setTint(0xa4f3ff);
+      this.player.setTint(0xb6f2ff);
       this.updateShieldAura(time);
     } else if (!this.player.isInvulnerable(time) && this.collected >= this.effectiveQuota) {
-      this.player.setTint(0xfff2ad);
+      if (this.isPulseOn(time, 180, 0.48)) {
+        this.player.setTint(0xfff3bf);
+      } else {
+        this.player.clearTint();
+      }
     } else if (!this.player.isInvulnerable(time) && this.halfQuotaGlowActive) {
-      this.player.setTint(0xff8ed6);
+      if (this.isPulseOn(time, 220, 0.44)) {
+        this.player.setTint(0xffb6e6);
+      } else {
+        this.player.clearTint();
+      }
     } else if (!this.player.isInvulnerable(time)) {
       this.player.clearTint();
     }
@@ -1913,6 +1921,12 @@ export class LevelScene extends Phaser.Scene {
     const g = Math.round(fg + (tg - fg) * ratio);
     const b = Math.round(fb + (tb - fb) * ratio);
     return (r << 16) | (g << 8) | b;
+  }
+
+  private isPulseOn(time: number, cycleMs: number, onRatio: number): boolean {
+    const safeCycle = Math.max(1, cycleMs);
+    const cycleTime = time % safeCycle;
+    return cycleTime < safeCycle * Phaser.Math.Clamp(onRatio, 0.05, 0.95);
   }
 
   private setDomFlag(key: string, value: string): void {
