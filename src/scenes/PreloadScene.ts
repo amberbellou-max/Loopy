@@ -24,6 +24,8 @@ export class PreloadScene extends Phaser.Scene {
       c: "#083a66",
       f: "#31f3ff",
       7: "#ff6ed0",
+    }, {
+      outlineColor: "#020a18",
     });
 
     this.drawPixelTexture("food_river_fish", [
@@ -94,6 +96,8 @@ export class PreloadScene extends Phaser.Scene {
     ], {
       r: "#ff3f6d",
       1: "#ffe8c8",
+    }, {
+      outlineColor: "#2a000f",
     });
 
     this.drawPixelTexture("enemy_rift_skimmer", [
@@ -109,6 +113,8 @@ export class PreloadScene extends Phaser.Scene {
       t: "#1e66d9",
       2: "#57d7ff",
       f: "#e7fbff",
+    }, {
+      outlineColor: "#04102a",
     });
 
     this.drawPixelTexture("enemy_arcane_totem", [
@@ -125,6 +131,8 @@ export class PreloadScene extends Phaser.Scene {
       4: "#a08aff",
       a: "#ffdfff",
       1: "#0d1732",
+    }, {
+      outlineColor: "#120427",
     });
 
     this.drawPixelTexture("enemy_snake_head", [
@@ -141,6 +149,8 @@ export class PreloadScene extends Phaser.Scene {
       7: "#a9ff4a",
       d: "#195829",
       1: "#0f170f",
+    }, {
+      outlineColor: "#071108",
     });
 
     this.drawPixelTexture("enemy_snake_segment", [
@@ -153,6 +163,8 @@ export class PreloadScene extends Phaser.Scene {
     ], {
       g: "#2c8e3e",
       8: "#8aff3a",
+    }, {
+      outlineColor: "#071108",
     });
 
     this.drawPixelTexture("wormhole_core", [
@@ -168,6 +180,8 @@ export class PreloadScene extends Phaser.Scene {
       p: "#3a1fd4",
       2: "#8f63ff",
       a: "#070513",
+    }, {
+      outlineColor: "#020205",
     });
 
     this.drawPixelTexture("wormhole_ocean_core", [
@@ -184,6 +198,8 @@ export class PreloadScene extends Phaser.Scene {
       7: "#6de2ff",
       k: "#0d2740",
       0: "#03060f",
+    }, {
+      outlineColor: "#01040a",
     });
 
     this.drawPixelTexture("projectile_enemy", [
@@ -196,6 +212,8 @@ export class PreloadScene extends Phaser.Scene {
     ], {
       o: "#ff6f2d",
       e: "#ffd98e",
+    }, {
+      outlineColor: "#2a1004",
     });
 
     this.drawPixelTexture("projectile_blackhole", [
@@ -208,6 +226,8 @@ export class PreloadScene extends Phaser.Scene {
     ], {
       k: "#0d1220",
       4: "#7688ad",
+    }, {
+      outlineColor: "#010204",
     });
 
     this.drawPixelTexture("glitter_shot", [
@@ -222,6 +242,8 @@ export class PreloadScene extends Phaser.Scene {
     ], {
       s: "#86f7ff",
       9: "#fff6c9",
+    }, {
+      outlineColor: "#03243a",
     });
 
     this.drawPixelTexture("pickup_seed", [
@@ -236,6 +258,8 @@ export class PreloadScene extends Phaser.Scene {
     ], {
       n: "#23bf5a",
       3: "#e4ff92",
+    }, {
+      outlineColor: "#08210f",
     });
 
     this.drawPixelTexture("pickup_universe_seed", [
@@ -250,6 +274,8 @@ export class PreloadScene extends Phaser.Scene {
     ], {
       u: "#5939ff",
       4: "#f2b8ff",
+    }, {
+      outlineColor: "#100728",
     });
 
     this.drawPixelTexture("pickup_life", [
@@ -264,6 +290,8 @@ export class PreloadScene extends Phaser.Scene {
     ], {
       h: "#ff3e63",
       H: "#ffd0de",
+    }, {
+      outlineColor: "#2b0912",
     });
 
     this.drawPixelTexture("seed_fountain_ghost", [
@@ -280,6 +308,8 @@ export class PreloadScene extends Phaser.Scene {
       6: "#bff8ff",
       w: "#f5feff",
       1: "#233f67",
+    }, {
+      outlineColor: "#071b30",
     });
 
     this.drawPixelTexture("boss_core", [
@@ -299,6 +329,8 @@ export class PreloadScene extends Phaser.Scene {
       7: "#f0feff",
       a: "#8d6bff",
       1: "#101828",
+    }, {
+      outlineColor: "#020913",
     });
 
     this.drawRectTexture("hazard_vine", 32, 8, "#4fdc7b");
@@ -320,7 +352,14 @@ export class PreloadScene extends Phaser.Scene {
     texture.refresh();
   }
 
-  private drawPixelTexture(key: string, pattern: string[], palette: Record<string, string>): void {
+  private drawPixelTexture(
+    key: string,
+    pattern: string[],
+    palette: Record<string, string>,
+    options: {
+      outlineColor?: string;
+    } = {},
+  ): void {
     const height = pattern.length;
     const width = pattern[0]?.length ?? 1;
     const texture = this.textures.createCanvas(key, width, height);
@@ -330,6 +369,51 @@ export class PreloadScene extends Phaser.Scene {
     const ctx = texture.context;
 
     ctx.clearRect(0, 0, width, height);
+    const filled = Array.from({ length: height }, () => Array.from({ length: width }, () => false));
+
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const code = pattern[y][x];
+        if (code === ".") {
+          continue;
+        }
+        if (!palette[code]) {
+          continue;
+        }
+        filled[y][x] = true;
+      }
+    }
+
+    if (options.outlineColor) {
+      ctx.fillStyle = options.outlineColor;
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          if (filled[y][x]) {
+            continue;
+          }
+          let touchesFill = false;
+          for (let oy = -1; oy <= 1 && !touchesFill; oy += 1) {
+            for (let ox = -1; ox <= 1; ox += 1) {
+              if (ox === 0 && oy === 0) {
+                continue;
+              }
+              const nx = x + ox;
+              const ny = y + oy;
+              if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
+                continue;
+              }
+              if (filled[ny][nx]) {
+                touchesFill = true;
+                break;
+              }
+            }
+          }
+          if (touchesFill) {
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+      }
+    }
 
     for (let y = 0; y < height; y += 1) {
       for (let x = 0; x < width; x += 1) {
