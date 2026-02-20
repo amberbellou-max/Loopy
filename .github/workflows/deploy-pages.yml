@@ -34,6 +34,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Normalize output entry filename
+        run: |
+          if [ -f dist/index.build.html ]; then
+            mv dist/index.build.html dist/index.html
+          fi
+
       - name: Publish dist to gh-pages fallback branch
         if: github.ref == 'refs/heads/main'
         env:
