@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:pages-root": "GITHUB_ACTIONS=true GITHUB_REPOSITORY=amberbellou-max/Loopy npm run build && rm -rf assets && cp -R dist/assets assets",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

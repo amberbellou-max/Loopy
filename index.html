@@ -7,6 +7,33 @@
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module">
+      const fallbackBase = "/Loopy/";
+
+      const showLoadError = (error) => {
+        const app = document.getElementById("app");
+        if (app) {
+          app.textContent = "Loopy failed to load. Please hard refresh this page.";
+          app.style.color = "#ffe7c9";
+          app.style.padding = "24px";
+          app.style.fontFamily = "monospace";
+        }
+        console.error("Loopy bootstrap failed", error);
+      };
+
+      import("/src/main.ts").catch(async (error) => {
+        try {
+          const cssLink = document.createElement("link");
+          cssLink.rel = "stylesheet";
+          cssLink.href = `${fallbackBase}assets/index.css`;
+          document.head.appendChild(cssLink);
+
+          await import(`${fallbackBase}assets/index.js`);
+        } catch (fallbackError) {
+          showLoadError(fallbackError);
+        }
+        console.warn("Primary source entry failed, using prebuilt fallback.", error);
+      });
+    </script>
   </body>
 </html>
