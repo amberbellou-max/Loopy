@@ -9,6 +9,9 @@
     <div id="app"></div>
     <script type="module">
       const fallbackBase = "/Loopy/";
+      const hostname = window.location.hostname;
+      const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
+      const preferFallback = !isLocalHost && (hostname.endsWith("github.io") || window.location.pathname.startsWith("/Loopy/"));
 
       const showLoadError = (error) => {
         const app = document.getElementById("app");
@@ -21,19 +24,35 @@
         console.error("Loopy bootstrap failed", error);
       };
 
-      import("/src/main.ts").catch(async (error) => {
-        try {
-          const cssLink = document.createElement("link");
-          cssLink.rel = "stylesheet";
-          cssLink.href = `${fallbackBase}assets/index.css`;
-          document.head.appendChild(cssLink);
+      const loadFallbackBuild = async () => {
+        const cssLink = document.createElement("link");
+        cssLink.rel = "stylesheet";
+        cssLink.href = `${fallbackBase}assets/index.css`;
+        document.head.appendChild(cssLink);
+        await import(`${fallbackBase}assets/index.js`);
+      };
 
-          await import(`${fallbackBase}assets/index.js`);
-        } catch (fallbackError) {
-          showLoadError(fallbackError);
+      const runBootstrap = async () => {
+        if (preferFallback) {
+          try {
+            await loadFallbackBuild();
+          } catch (error) {
+            showLoadError(error);
+          }
+          return;
         }
-        console.warn("Primary source entry failed, using prebuilt fallback.", error);
-      });
+
+        import("/src/main.ts").catch(async (error) => {
+          try {
+            await loadFallbackBuild();
+          } catch (fallbackError) {
+            showLoadError(fallbackError);
+          }
+          console.warn("Primary source entry failed, using prebuilt fallback.", error);
+        });
+      };
+
+      runBootstrap();
     </script>
   </body>
 </html>
