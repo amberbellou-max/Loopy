@@ -38,7 +38,9 @@ Loopy is a Phaser 3 + TypeScript side-scrolling game with 19 handcrafted levels.
   - Dash trigger: `Shift`
   - Pause: `P`
 - Touch
-  - On-screen movement and action buttons are generated automatically (`A`, `DS`, `Q`).
+  - Left virtual pad: drag for analog movement.
+  - Right action buttons: `SPACE` (glitter), `DASH`, `BLOOM`.
+  - Touch controls auto-enable on touch devices and stay hidden on laptop/desktop.
 
 ## New Systems
 - Combo window: 450ms Space multi-tap resolver.

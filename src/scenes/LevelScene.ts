@@ -232,6 +232,7 @@ export class LevelScene extends Phaser.Scene {
     this.audioSystem = new AudioSystem(this);
     this.hud = new HUD(this);
     this.comboSystem = new GlitterComboSystem();
+    this.applyMobileRuntimeTuning();
 
     const save = SaveSystem.load();
     this.audioSystem.setVolumes(save.settings.musicVolume, save.settings.sfxVolume);
@@ -257,6 +258,13 @@ export class LevelScene extends Phaser.Scene {
     this.hud.updateCheckpointCost(this.checkpointCost);
     this.hud.updateSpecials(this.spaceSpecialsRemaining, this.spaceSpecialsMax);
     this.hud.flashCheckpoint(`Level ${this.level.id}: Eat ${this.effectiveQuota} food`);
+    if (this.inputSystem.isTouchControlsEnabled()) {
+      this.time.delayedCall(1350, () => {
+        if (!this.completed) {
+          this.hud.flashCheckpoint("Touch: drag pad, tap SPACE / DASH / BLOOM");
+        }
+      });
+    }
 
     this.setDomFlag("loopyCurrentLevel", String(this.level.id));
     this.setDomFlag("loopyRespawnCount", "0");
@@ -1924,6 +1932,18 @@ export class LevelScene extends Phaser.Scene {
     const g = Math.round(fg + (tg - fg) * ratio);
     const b = Math.round(fb + (tb - fb) * ratio);
     return (r << 16) | (g << 8) | b;
+  }
+
+  private applyMobileRuntimeTuning(): void {
+    if (!this.inputSystem.isTouchControlsEnabled()) {
+      return;
+    }
+
+    this.maxEnemyProjectiles = Math.max(90, Math.floor(this.maxEnemyProjectiles * 0.82));
+    this.maxGlitterShots = Math.max(64, Math.floor(this.maxGlitterShots * 0.84));
+    this.shotFlashIntervalMs = Math.max(this.shotFlashIntervalMs + 16, 62);
+    this.holdShotIntervalMs = Math.max(this.holdShotIntervalMs, 112);
+    this.cameras.main.setLerp(0.08, 0.08);
   }
 
   private isPulseOn(time: number, cycleMs: number, onRatio: number): boolean {

@@ -25,6 +25,12 @@ export function createGame(parent: string, options: CreateGameOptions = {}): Pha
       antialias: false,
       roundPixels: true,
     },
+    input: {
+      activePointers: 6,
+      touch: {
+        capture: true,
+      },
+    },
     physics: {
       default: "arcade",
       arcade: {

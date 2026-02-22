@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { HUD as HUD_CONFIG } from "../data/balance";
 import { tokenLessons, type TokenLesson, type TokenLessonReason } from "../data/tokenLessons";
+import { getDeviceProfile } from "../systems/deviceProfile";
 
 export class HUD {
   private readonly scene: Phaser.Scene;
@@ -31,6 +32,17 @@ export class HUD {
   private tokenTutorCooldownUntil = 0;
   private tokenTutorHideTimer: Phaser.Time.TimerEvent | null = null;
   private spaceDismissHandler: (() => void) | null = null;
+  private resizeHandler: (() => void) | null = null;
+  private healthFillMaxWidth = 196;
+  private bossBarWidth = 480;
+  private bossFillMaxWidth = 476;
+  private tokenTutorPanelWide = 560;
+  private tokenTutorPanelTall = 126;
+  private tokenTutorPanelShort = 102;
+  private lastHealthRatio = 1;
+  private bossVisible = false;
+  private bossHpRatio = 1;
+  private bossPhase = 1;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -184,12 +196,16 @@ export class HUD {
       scene.input.keyboard.on("keydown-SPACE", this.spaceDismissHandler);
     }
 
+    this.resizeHandler = () => this.applyLayout();
+    scene.scale.on("resize", this.resizeHandler);
+    this.applyLayout();
     this.updateBoss(false, 1, 1);
   }
 
   updateHealth(healthRatio: number): void {
     const safe = Phaser.Math.Clamp(healthRatio, 0, 1);
-    this.healthFill.width = 196 * safe;
+    this.lastHealthRatio = safe;
+    this.healthFill.width = this.healthFillMaxWidth * safe;
     if (safe > 0.55) {
       this.healthFill.fillColor = 0x56dfb3;
     } else if (safe > 0.3) {
@@ -231,6 +247,9 @@ export class HUD {
   }
 
   updateBoss(visible: boolean, hpRatio: number, phase: number): void {
+    this.bossVisible = visible;
+    this.bossHpRatio = Phaser.Math.Clamp(hpRatio, 0, 1);
+    this.bossPhase = phase;
     this.bossBarBg.setVisible(visible);
     this.bossBarFill.setVisible(visible);
     this.bossLabel.setVisible(visible);
@@ -238,8 +257,7 @@ export class HUD {
       return;
     }
 
-    const safe = Phaser.Math.Clamp(hpRatio, 0, 1);
-    this.bossBarFill.width = 476 * safe;
+    this.bossBarFill.width = this.bossFillMaxWidth * this.bossHpRatio;
     this.bossLabel.setText(`Boss Phase ${phase}`);
     this.bossBarFill.fillColor = phase === 1 ? 0xea5f8c : phase === 2 ? 0xf27a5c : 0xfdca65;
   }
@@ -274,11 +292,11 @@ export class HUD {
     if (lesson.example) {
       this.tokenTutorExample.setVisible(true);
       this.tokenTutorExample.setText(`Example: ${lesson.example}`);
-      this.tokenTutorBg.height = 126;
+      this.tokenTutorBg.height = this.tokenTutorPanelTall;
     } else {
       this.tokenTutorExample.setVisible(false);
       this.tokenTutorExample.setText("");
-      this.tokenTutorBg.height = 102;
+      this.tokenTutorBg.height = this.tokenTutorPanelShort;
     }
 
     this.scene.tweens.killTweensOf(this.tokenTutorContainer);
@@ -321,6 +339,93 @@ export class HUD {
     });
   }
 
+  private applyLayout(): void {
+    const width = this.scene.scale.width;
+    const height = this.scene.scale.height;
+    const profile = getDeviceProfile(width, height);
+    const compact = profile.isCompactHud || profile.isPhoneViewport;
+    const margin = compact ? 10 : HUD_CONFIG.margin;
+
+    const healthBarWidth = compact ? (width < 640 ? 150 : 170) : 200;
+    const healthBarHeight = compact ? 14 : 18;
+    this.healthFillMaxWidth = healthBarWidth - 4;
+    this.healthBg.setPosition(margin, margin + 4).setSize(healthBarWidth, healthBarHeight);
+    this.healthFill.setPosition(margin + 2, margin + 6).setSize(this.healthFillMaxWidth, healthBarHeight - 4);
+    this.updateHealth(this.lastHealthRatio);
+
+    const labelFont = compact ? "16px" : "20px";
+    const infoFont = compact ? "14px" : "18px";
+    const leftTop = margin + (compact ? 22 : 38);
+    const lineGap = compact ? 20 : 24;
+
+    this.quotaText.setFontSize(labelFont).setPosition(margin, leftTop);
+    this.timerText.setFontSize(infoFont).setPosition(margin, leftTop + lineGap);
+    this.livesText.setFontSize(infoFont).setPosition(margin, leftTop + lineGap * 2);
+    this.seedsText.setFontSize(infoFont).setPosition(margin, leftTop + lineGap * 3);
+    this.bloomText.setFontSize(infoFont).setPosition(margin, leftTop + lineGap * 4);
+
+    this.comboText
+      .setFontSize(compact ? "16px" : "20px")
+      .setStroke("#03170f", compact ? 3 : 4)
+      .setPosition(width - margin, margin + (compact ? 6 : 12));
+    this.checkpointCostText
+      .setFontSize(compact ? "13px" : "16px")
+      .setStroke("#03170f", compact ? 2 : 3)
+      .setPosition(width - margin, margin + (compact ? 30 : 42));
+    this.specialsText
+      .setFontSize(compact ? "13px" : "16px")
+      .setStroke("#03170f", compact ? 2 : 3)
+      .setPosition(width - margin, margin + (compact ? 48 : 66));
+
+    if (compact && width < 620) {
+      const stackedY = leftTop + lineGap * 5 + 6;
+      this.comboText.setPosition(width - margin, stackedY);
+      this.checkpointCostText.setPosition(width - margin, stackedY + 20);
+      this.specialsText.setPosition(width - margin, stackedY + 38);
+    }
+
+    this.checkpointText
+      .setFontSize(compact ? "18px" : "22px")
+      .setStroke("#03170f", compact ? 3 : 4)
+      .setPosition(width * 0.5, margin + 6);
+
+    this.tokenTutorPanelWide = compact ? Phaser.Math.Clamp(width - margin * 2, 280, 460) : 560;
+    this.tokenTutorPanelTall = compact ? 112 : 126;
+    this.tokenTutorPanelShort = compact ? 92 : 102;
+    const tutorHasExample = this.tokenTutorExample.visible && this.tokenTutorExample.text.length > 0;
+    this.tokenTutorBg.setSize(this.tokenTutorPanelWide, tutorHasExample ? this.tokenTutorPanelTall : this.tokenTutorPanelShort);
+    this.tokenTutorContainer.setPosition(width * 0.5, compact ? 94 : 110);
+
+    const panelLeft = -this.tokenTutorPanelWide * 0.5 + 12;
+    this.tokenTutorTitle
+      .setFontSize(compact ? "18px" : "22px")
+      .setStroke("#03170f", compact ? 2 : 3)
+      .setWordWrapWidth(this.tokenTutorPanelWide - 24)
+      .setPosition(panelLeft, compact ? -34 : -46);
+    this.tokenTutorBody
+      .setFontSize(compact ? "15px" : "17px")
+      .setStroke("#03170f", compact ? 1 : 2)
+      .setWordWrapWidth(this.tokenTutorPanelWide - 24)
+      .setPosition(panelLeft, compact ? -8 : -14);
+    this.tokenTutorExample
+      .setFontSize(compact ? "14px" : "16px")
+      .setStroke("#03170f", compact ? 1 : 2)
+      .setWordWrapWidth(this.tokenTutorPanelWide - 24)
+      .setPosition(panelLeft, compact ? 24 : 32);
+
+    this.bossBarWidth = compact ? Phaser.Math.Clamp(Math.floor(width * 0.56), 220, 360) : 480;
+    const bossBarHeight = compact ? 12 : 16;
+    this.bossFillMaxWidth = this.bossBarWidth - 4;
+    const bossTop = compact ? margin + 2 : 54;
+    this.bossBarBg.setPosition(width * 0.5, bossTop).setSize(this.bossBarWidth, bossBarHeight);
+    this.bossBarFill.setPosition(width * 0.5 - this.bossBarWidth * 0.5 + 2, bossTop + 2).setSize(this.bossFillMaxWidth, bossBarHeight - 4);
+    this.bossLabel
+      .setPosition(width * 0.5, bossTop - (compact ? 16 : 26))
+      .setFontSize(compact ? "14px" : "18px")
+      .setStroke("#1b1023", compact ? 2 : 3);
+    this.updateBoss(this.bossVisible, this.bossHpRatio, this.bossPhase);
+  }
+
   private pickTokenLesson(reason: TokenLessonReason): TokenLesson {
     const tagged = tokenLessons.filter((lesson) => !lesson.tags || lesson.tags.length === 0 || lesson.tags.includes(reason));
     const reasonPool = tagged.length > 0 ? tagged : tokenLessons;
@@ -331,6 +436,10 @@ export class HUD {
   }
 
   destroy(): void {
+    if (this.resizeHandler) {
+      this.scene.scale.off("resize", this.resizeHandler);
+      this.resizeHandler = null;
+    }
     if (this.spaceDismissHandler && this.scene.input.keyboard) {
       this.scene.input.keyboard.off("keydown-SPACE", this.spaceDismissHandler);
       this.spaceDismissHandler = null;

@@ -8,6 +8,9 @@ export interface InputDebugSnapshot {
   spaceUpTransitions: number;
   touchAbilityTapCount: number;
   touchAbilityHeld: boolean;
+  touchMoveX: number;
+  touchMoveY: number;
+  touchControlsMounted: boolean;
 }
 
 export interface AudioDebugSnapshot {
