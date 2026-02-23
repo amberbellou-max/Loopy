@@ -88,6 +88,30 @@ Loopy is a Phaser 3 + TypeScript side-scrolling game with 19 handcrafted levels.
   - Branch: `gh-pages` / `root`
 - Live URL: `https://amberbellou-max.github.io/Loopy/`
 
+## iPhone App (App Store)
+- This repo is wired for Capacitor iOS packaging.
+- Required tools on your Mac:
+  - Xcode (full app, not just command-line tools)
+  - CocoaPods (`pod`) and Ruby setup that supports your macOS/Xcode stack
+- Install and initialize native iOS shell:
+  - `npm install`
+  - `npm run ios:add` (first time only)
+- Sync game updates into iOS shell:
+  - `npm run ios:sync`
+- Open in Xcode:
+  - `npm run ios:open`
+- In Xcode:
+  - Set your Apple Team in Signing & Capabilities
+  - Confirm Bundle Identifier (`com.amberbelloumax.loopy`) or change to your own
+  - Set app version/build number
+  - Add app icons and launch assets
+  - Set required Privacy keys in `Info.plist` if you add features that need them
+  - Product -> Archive -> Distribute App -> App Store Connect
+- In App Store Connect:
+  - Create app record (name, bundle id, SKU)
+  - Add screenshots, description, age rating, and metadata
+  - Submit for review
+
 ## E2E Debug Hooks
 - Hooks are enabled only in `?e2e=1` mode.
 - Query params:

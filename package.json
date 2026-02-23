@@ -7,15 +7,22 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build && if [ -f dist/index.build.html ]; then mv dist/index.build.html dist/index.html; fi",
     "build:pages-root": "GITHUB_ACTIONS=true GITHUB_REPOSITORY=amberbellou-max/Loopy npm run build && rm -rf assets && cp -R dist/assets assets",
+    "ios:add": "npm run build && npx cap add ios",
+    "ios:sync": "npm run build && npx cap sync ios",
+    "ios:open": "npx cap open ios",
+    "ios:run": "npx cap run ios",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@capacitor/core": "^7.5.0",
     "phaser": "^3.80.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.5.0",
+    "@capacitor/ios": "^7.5.0",
     "@playwright/test": "^1.52.0",
     "@types/node": "^22.13.5",
     "typescript": "^5.7.3",
