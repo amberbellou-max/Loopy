@@ -3,6 +3,14 @@ import { HUD as HUD_CONFIG } from "../data/balance";
 import { tokenLessons, type TokenLesson, type TokenLessonReason } from "../data/tokenLessons";
 import { getDeviceProfile } from "../systems/deviceProfile";
 
+interface TokenLabStatus {
+  inputTokens: number;
+  outputTokens: number;
+  contextWindow: number;
+  remainingTokens: number;
+  masteryLabel: string;
+}
+
 export class HUD {
   private readonly scene: Phaser.Scene;
   private readonly healthBg: Phaser.GameObjects.Rectangle;
@@ -14,6 +22,7 @@ export class HUD {
   private readonly livesText: Phaser.GameObjects.Text;
   private readonly seedsText: Phaser.GameObjects.Text;
   private readonly bloomText: Phaser.GameObjects.Text;
+  private readonly tokenLabText: Phaser.GameObjects.Text;
   private readonly comboText: Phaser.GameObjects.Text;
   private readonly checkpointCostText: Phaser.GameObjects.Text;
   private readonly specialsText: Phaser.GameObjects.Text;
@@ -39,6 +48,7 @@ export class HUD {
   private tokenTutorPanelWide = 560;
   private tokenTutorPanelTall = 126;
   private tokenTutorPanelShort = 102;
+  private tokenTutorCompact = false;
   private lastHealthRatio = 1;
   private bossVisible = false;
   private bossHpRatio = 1;
@@ -76,6 +86,14 @@ export class HUD {
     this.bloomText = scene.add.text(margin, margin + 136, "Bloom: 0/100", {
       color: "#d6d8ff",
       fontSize: "18px",
+    });
+
+    this.tokenLabText = scene.add.text(margin, margin + 160, "Token Lab: in 0 | out 0\nWindow left: -- | Style: --", {
+      color: "#c8ffe6",
+      fontSize: "14px",
+      stroke: "#03170f",
+      strokeThickness: 2,
+      wordWrap: { width: 320 },
     });
 
     this.comboText = scene.add.text(scene.scale.width - margin, margin + 12, "Combo: Hold fire", {
@@ -175,6 +193,7 @@ export class HUD {
       this.livesText,
       this.seedsText,
       this.bloomText,
+      this.tokenLabText,
       this.comboText,
       this.checkpointCostText,
       this.specialsText,
@@ -193,7 +212,7 @@ export class HUD {
           this.dismissTokenLesson();
         }
       };
-      scene.input.keyboard.on("keydown-SPACE", this.spaceDismissHandler);
+      scene.input.keyboard.on("keydown-ESC", this.spaceDismissHandler);
     }
 
     this.resizeHandler = () => this.applyLayout();
@@ -231,6 +250,24 @@ export class HUD {
     this.livesText.setText(`Lives: ${lives}`);
     this.seedsText.setText(`Seeds: ${seeds} | U-Seeds: ${universeSeeds}`);
     this.bloomText.setText(`Bloom (Q): ${Math.floor(bloomMeter)}/100`);
+  }
+
+  updateTokenLab(status: TokenLabStatus): void {
+    this.tokenLabText.setText(
+      `Token Lab: in ${status.inputTokens} | out ${status.outputTokens}\nWindow left: ${status.remainingTokens}/${status.contextWindow} | Style: ${status.masteryLabel}`,
+    );
+
+    if (status.remainingTokens < 0) {
+      this.tokenLabText.setColor("#ffb6b6");
+      return;
+    }
+
+    if (status.remainingTokens <= Math.round(status.contextWindow * 0.15)) {
+      this.tokenLabText.setColor("#ffe6a8");
+      return;
+    }
+
+    this.tokenLabText.setColor("#c8ffe6");
   }
 
   updateCombo(taps: number): void {
@@ -275,46 +312,25 @@ export class HUD {
   }
 
   showTokenLesson(reason: TokenLessonReason, nowMs: number): void {
-    if (nowMs < this.tokenTutorCooldownUntil) {
-      return;
-    }
-    if (this.tokenTutorContainer.visible && nowMs < this.tokenTutorVisibleUntil) {
-      return;
-    }
-
     const lesson = this.pickTokenLesson(reason);
-    this.tokenTutorLastLessonId = lesson.id;
-    this.tokenTutorVisibleUntil = nowMs + 4000;
-    this.tokenTutorCooldownUntil = nowMs + 8000;
+    this.presentTokenLesson(lesson, nowMs, { respectCooldown: true, durationMs: 5600, cooldownMs: 9200 });
+  }
 
-    this.tokenTutorTitle.setText(lesson.title);
-    this.tokenTutorBody.setText(lesson.body);
-    if (lesson.example) {
-      this.tokenTutorExample.setVisible(true);
-      this.tokenTutorExample.setText(`Example: ${lesson.example}`);
-      this.tokenTutorBg.height = this.tokenTutorPanelTall;
-    } else {
-      this.tokenTutorExample.setVisible(false);
-      this.tokenTutorExample.setText("");
-      this.tokenTutorBg.height = this.tokenTutorPanelShort;
-    }
-
-    this.scene.tweens.killTweensOf(this.tokenTutorContainer);
-    if (this.tokenTutorHideTimer) {
-      this.tokenTutorHideTimer.remove(false);
-      this.tokenTutorHideTimer = null;
-    }
-
-    this.tokenTutorContainer.setVisible(true);
-    this.tokenTutorContainer.alpha = 0;
-    this.scene.tweens.add({
-      targets: this.tokenTutorContainer,
-      alpha: 1,
-      duration: 140,
-      ease: "Sine.Out",
-    });
-
-    this.tokenTutorHideTimer = this.scene.time.delayedCall(4000, () => this.dismissTokenLesson());
+  showTokenCurriculumNote(title: string, body: string, nowMs: number, example?: string, durationMs = 6800): void {
+    this.presentTokenLesson(
+      {
+        id: `curriculum-${Math.floor(nowMs)}`,
+        title,
+        body,
+        example,
+      },
+      nowMs,
+      {
+        respectCooldown: false,
+        durationMs,
+        cooldownMs: Math.max(3600, Math.round(durationMs * 0.85)),
+      },
+    );
   }
 
   dismissTokenLesson(): void {
@@ -344,6 +360,7 @@ export class HUD {
     const height = this.scene.scale.height;
     const profile = getDeviceProfile(width, height);
     const compact = profile.isCompactHud || profile.isPhoneViewport;
+    this.tokenTutorCompact = compact;
     const margin = compact ? 10 : HUD_CONFIG.margin;
 
     const healthBarWidth = compact ? (width < 640 ? 150 : 170) : 200;
@@ -363,6 +380,11 @@ export class HUD {
     this.livesText.setFontSize(infoFont).setPosition(margin, leftTop + lineGap * 2);
     this.seedsText.setFontSize(infoFont).setPosition(margin, leftTop + lineGap * 3);
     this.bloomText.setFontSize(infoFont).setPosition(margin, leftTop + lineGap * 4);
+    this.tokenLabText
+      .setFontSize(compact ? "12px" : "14px")
+      .setStroke("#03170f", compact ? 1 : 2)
+      .setWordWrapWidth(compact ? Phaser.Math.Clamp(Math.floor(width * 0.5), 160, 280) : 320)
+      .setPosition(margin, leftTop + lineGap * 5 + (compact ? 2 : 4));
 
     this.comboText
       .setFontSize(compact ? "16px" : "20px")
@@ -392,26 +414,23 @@ export class HUD {
     this.tokenTutorPanelWide = compact ? Phaser.Math.Clamp(width - margin * 2, 280, 460) : 560;
     this.tokenTutorPanelTall = compact ? 112 : 126;
     this.tokenTutorPanelShort = compact ? 92 : 102;
-    const tutorHasExample = this.tokenTutorExample.visible && this.tokenTutorExample.text.length > 0;
-    this.tokenTutorBg.setSize(this.tokenTutorPanelWide, tutorHasExample ? this.tokenTutorPanelTall : this.tokenTutorPanelShort);
+    this.tokenTutorBg.setSize(this.tokenTutorPanelWide, this.tokenTutorPanelTall);
     this.tokenTutorContainer.setPosition(width * 0.5, compact ? 94 : 110);
 
-    const panelLeft = -this.tokenTutorPanelWide * 0.5 + 12;
     this.tokenTutorTitle
       .setFontSize(compact ? "18px" : "22px")
       .setStroke("#03170f", compact ? 2 : 3)
-      .setWordWrapWidth(this.tokenTutorPanelWide - 24)
-      .setPosition(panelLeft, compact ? -34 : -46);
+      .setWordWrapWidth(this.tokenTutorPanelWide - 24);
     this.tokenTutorBody
       .setFontSize(compact ? "15px" : "17px")
       .setStroke("#03170f", compact ? 1 : 2)
-      .setWordWrapWidth(this.tokenTutorPanelWide - 24)
-      .setPosition(panelLeft, compact ? -8 : -14);
+      .setWordWrapWidth(this.tokenTutorPanelWide - 24);
     this.tokenTutorExample
       .setFontSize(compact ? "14px" : "16px")
       .setStroke("#03170f", compact ? 1 : 2)
-      .setWordWrapWidth(this.tokenTutorPanelWide - 24)
-      .setPosition(panelLeft, compact ? 24 : 32);
+      .setWordWrapWidth(this.tokenTutorPanelWide - 24);
+    this.layoutTokenTutorText();
+    this.applyTokenTutorHeight();
 
     this.bossBarWidth = compact ? Phaser.Math.Clamp(Math.floor(width * 0.56), 220, 360) : 480;
     const bossBarHeight = compact ? 12 : 16;
@@ -435,13 +454,81 @@ export class HUD {
     return finalPool[index];
   }
 
+  private presentTokenLesson(
+    lesson: TokenLesson,
+    nowMs: number,
+    options: { respectCooldown: boolean; durationMs: number; cooldownMs: number },
+  ): void {
+    if (options.respectCooldown && nowMs < this.tokenTutorCooldownUntil) {
+      return;
+    }
+    if (options.respectCooldown && this.tokenTutorContainer.visible && nowMs < this.tokenTutorVisibleUntil) {
+      return;
+    }
+
+    this.tokenTutorLastLessonId = lesson.id;
+    this.tokenTutorVisibleUntil = nowMs + options.durationMs;
+    this.tokenTutorCooldownUntil = nowMs + options.cooldownMs;
+
+    this.tokenTutorTitle.setText(lesson.title);
+    this.tokenTutorBody.setText(lesson.body);
+    if (lesson.example) {
+      this.tokenTutorExample.setVisible(true);
+      this.tokenTutorExample.setText(`Example: ${lesson.example}`);
+    } else {
+      this.tokenTutorExample.setVisible(false);
+      this.tokenTutorExample.setText("");
+    }
+    this.layoutTokenTutorText();
+    this.applyTokenTutorHeight();
+
+    this.scene.tweens.killTweensOf(this.tokenTutorContainer);
+    if (this.tokenTutorHideTimer) {
+      this.tokenTutorHideTimer.remove(false);
+      this.tokenTutorHideTimer = null;
+    }
+
+    this.tokenTutorContainer.setVisible(true);
+    this.tokenTutorContainer.alpha = 0;
+    this.scene.tweens.add({
+      targets: this.tokenTutorContainer,
+      alpha: 1,
+      duration: 140,
+      ease: "Sine.Out",
+    });
+
+    this.tokenTutorHideTimer = this.scene.time.delayedCall(options.durationMs, () => this.dismissTokenLesson());
+  }
+
+  private applyTokenTutorHeight(): void {
+    const hasExample = this.tokenTutorExample.visible && this.tokenTutorExample.text.length > 0;
+    const top = this.tokenTutorTitle.y;
+    const bodyBottom = this.tokenTutorBody.y + this.tokenTutorBody.displayHeight;
+    const exampleBottom = hasExample ? this.tokenTutorExample.y + this.tokenTutorExample.displayHeight : bodyBottom;
+    const textBottom = Math.max(bodyBottom, exampleBottom);
+    const desired = Math.ceil(textBottom - top + 22);
+    const minHeight = hasExample ? this.tokenTutorPanelTall : this.tokenTutorPanelShort;
+    const maxHeight = hasExample ? 260 : 200;
+    this.tokenTutorBg.setSize(this.tokenTutorPanelWide, Phaser.Math.Clamp(desired, minHeight, maxHeight));
+  }
+
+  private layoutTokenTutorText(): void {
+    const panelLeft = -this.tokenTutorPanelWide * 0.5 + 12;
+    const titleY = this.tokenTutorCompact ? -34 : -46;
+    const gap = this.tokenTutorCompact ? 6 : 8;
+
+    this.tokenTutorTitle.setPosition(panelLeft, titleY);
+    this.tokenTutorBody.setPosition(panelLeft, titleY + this.tokenTutorTitle.displayHeight + gap);
+    this.tokenTutorExample.setPosition(panelLeft, this.tokenTutorBody.y + this.tokenTutorBody.displayHeight + gap);
+  }
+
   destroy(): void {
     if (this.resizeHandler) {
       this.scene.scale.off("resize", this.resizeHandler);
       this.resizeHandler = null;
     }
     if (this.spaceDismissHandler && this.scene.input.keyboard) {
-      this.scene.input.keyboard.off("keydown-SPACE", this.spaceDismissHandler);
+      this.scene.input.keyboard.off("keydown-ESC", this.spaceDismissHandler);
       this.spaceDismissHandler = null;
     }
     if (this.tokenTutorHideTimer) {
@@ -455,6 +542,7 @@ export class HUD {
     this.livesText.destroy();
     this.seedsText.destroy();
     this.bloomText.destroy();
+    this.tokenLabText.destroy();
     this.comboText.destroy();
     this.checkpointCostText.destroy();
     this.specialsText.destroy();

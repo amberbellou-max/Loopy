@@ -1,4 +1,5 @@
 import type { GlitterComboAction } from "../systems/glitterCombo";
+import type { TokenMasteryTier } from "../systems/tokenCurriculum";
 
 export interface InputDebugSnapshot {
   readCount: number;
@@ -94,6 +95,18 @@ export interface LevelDebugSnapshot {
     oceanEscapeProgress: number;
     oceanEscapeGoal: number;
     oceanEscapeSpaceHits: number;
+  };
+  tokenCurriculum: {
+    estimatedInputTokens: number;
+    estimatedOutputTokens: number;
+    estimatedTotalTokens: number;
+    contextWindow: number;
+    remainingTokens: number;
+    outputToInputRatio: number;
+    masteryTier: TokenMasteryTier;
+    masteryLabel: string;
+    milestoneCursor: number;
+    milestoneBudgets: number[];
   };
   freezeDiagnostics: LevelFreezeDiagnostics;
   inputDebug: InputDebugSnapshot;

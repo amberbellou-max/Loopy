@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { DAMAGE } from "../data/balance";
+import { getLearningTopicForLevel, type LevelLearningTopic } from "../data/levelLearningTopics";
 import { getLevelById, MAX_LEVEL_ID } from "../data/levels";
 import { getUnlockedAbilities } from "../data/upgrades";
 import { ArcaneBoss } from "../entities/ArcaneBoss";
@@ -19,6 +20,7 @@ import { InputSystem, type InputSnapshot } from "../systems/InputSystem";
 import { SaveSystem } from "../systems/SaveSystem";
 import { SpawnSystem } from "../systems/SpawnSystem";
 import { checkpointSeedCost, getDifficultyParams, scaleQuota, scaleTimeLimit, type DifficultyParams } from "../systems/difficulty";
+import { createTokenCurriculumPlan, evaluateTokenBudget, type TokenBudgetSnapshot } from "../systems/tokenCurriculum";
 import type { LevelDefinition, SeedFountainGhostRule, SpinArenaRule } from "../types/gameTypes";
 import { GAME_EVENTS } from "../types/gameTypes";
 import type { LevelDebugSnapshot } from "../types/debugTypes";
@@ -125,6 +127,13 @@ export class LevelScene extends Phaser.Scene {
   private nextSpinArenaRuleIndex = 0;
   private readonly activeSpinArenas: SpinArena[] = [];
   private nextSpinArenaHintAt = 0;
+  private tokenInputEstimate = 0;
+  private tokenOutputEstimate = 0;
+  private tokenContextWindow = 160;
+  private tokenMilestoneBudgets: number[] = [];
+  private tokenMilestoneCursor = 0;
+  private tokenOverflowLessonShown = false;
+  private currentLearningTopic!: LevelLearningTopic;
 
   private timeLeftSec: number | null = null;
 
@@ -201,6 +210,14 @@ export class LevelScene extends Phaser.Scene {
     this.nextSpinArenaHintAt = 0;
     this.activeSpinArenas.forEach((arena) => arena.destroy());
     this.activeSpinArenas.length = 0;
+    this.tokenInputEstimate = 0;
+    this.tokenOutputEstimate = 0;
+    const tokenPlan = createTokenCurriculumPlan(levelId, this.effectiveQuota);
+    this.tokenContextWindow = tokenPlan.contextWindow;
+    this.tokenMilestoneBudgets = [...tokenPlan.milestoneBudgets];
+    this.tokenMilestoneCursor = 0;
+    this.tokenOverflowLessonShown = false;
+    this.currentLearningTopic = getLearningTopicForLevel(levelId);
 
     this.boss = null;
     this.bossSpawned = false;
@@ -257,7 +274,21 @@ export class LevelScene extends Phaser.Scene {
     this.hud.updateEconomy(this.livesRemaining, this.seedCount, this.universeSeedCount, this.bloomMeter);
     this.hud.updateCheckpointCost(this.checkpointCost);
     this.hud.updateSpecials(this.spaceSpecialsRemaining, this.spaceSpecialsMax);
+    this.updateTokenLabHud();
     this.hud.flashCheckpoint(`Level ${this.level.id}: Eat ${this.effectiveQuota} food`);
+    const trackLabel = this.currentLearningTopic.track === "tokens" ? "Tokens" : "Neural Nets";
+    this.time.delayedCall(550, () => {
+      if (this.completed) {
+        return;
+      }
+      this.hud.showTokenCurriculumNote(
+        `Level ${this.level.id} Focus (${trackLabel})`,
+        `${this.currentLearningTopic.title}: ${this.currentLearningTopic.coreIdea}`,
+        this.time.now,
+        `Why it matters: ${this.currentLearningTopic.whyItMatters}`,
+        7600,
+      );
+    });
     if (this.inputSystem.isTouchControlsEnabled()) {
       this.time.delayedCall(1350, () => {
         if (!this.completed) {
@@ -422,6 +453,7 @@ export class LevelScene extends Phaser.Scene {
 
     this.updateCheckpoints(time);
     this.updateExitGateVisual();
+    this.updateTokenCurriculumGuidance(time);
 
     this.hud.updateHealth(this.player.getHealthRatio());
     this.hud.updateQuota(this.collected, this.effectiveQuota);
@@ -429,6 +461,7 @@ export class LevelScene extends Phaser.Scene {
     this.hud.updateCheckpointCost(this.checkpointCost);
     this.hud.updateSpecials(this.spaceSpecialsRemaining, this.spaceSpecialsMax);
     this.hud.updateCombo(this.comboSystem.getPendingTapCount(time));
+    this.updateTokenLabHud();
 
     if (this.timeLeftSec !== null) {
       this.timeLeftSec -= deltaSec;
@@ -462,6 +495,7 @@ export class LevelScene extends Phaser.Scene {
 
     const longFrameRatio = this.debugUpdateCount > 0 ? this.debugLongFrameCount / this.debugUpdateCount : 0;
     const sustainedStallDetected = this.debugWorstConsecutiveStallFrames >= 4 || longFrameRatio >= 0.35;
+    const tokenBudget = this.getTokenBudgetSnapshot();
 
     return {
       coordinateSystem: "origin top-left, +x right, +y down",
@@ -529,6 +563,18 @@ export class LevelScene extends Phaser.Scene {
         oceanEscapeProgress: this.oceanEscapeProgress,
         oceanEscapeGoal: this.oceanEscapeGoal,
         oceanEscapeSpaceHits: this.oceanEscapeSpaceHits,
+      },
+      tokenCurriculum: {
+        estimatedInputTokens: tokenBudget.estimatedInputTokens,
+        estimatedOutputTokens: tokenBudget.estimatedOutputTokens,
+        estimatedTotalTokens: tokenBudget.estimatedTotalTokens,
+        contextWindow: tokenBudget.contextWindow,
+        remainingTokens: tokenBudget.remainingTokens,
+        outputToInputRatio: tokenBudget.outputToInputRatio,
+        masteryTier: tokenBudget.masteryTier,
+        masteryLabel: tokenBudget.masteryLabel,
+        milestoneCursor: this.tokenMilestoneCursor,
+        milestoneBudgets: [...this.tokenMilestoneBudgets],
       },
       freezeDiagnostics: {
         maxDeltaMs: this.debugMaxDeltaMs,
@@ -859,6 +905,7 @@ export class LevelScene extends Phaser.Scene {
     shot.setScale(shotScale);
     this.ensureGroupCapacity(this.glitterShots, this.maxGlitterShots);
     this.glitterShots.add(shot);
+    this.tokenOutputEstimate += 1;
 
     if (showFlash && this.time.now >= this.nextShotFlashAt) {
       this.nextShotFlashAt = this.time.now + this.shotFlashIntervalMs;
@@ -1096,6 +1143,7 @@ export class LevelScene extends Phaser.Scene {
     this.collected += 1;
     this.seedCount += 1;
     this.bloomMeter = Math.min(100, this.bloomMeter + 1.8);
+    this.tokenInputEstimate += 1;
 
     this.events.emit(GAME_EVENTS.QUOTA_PROGRESS, {
       collected: this.collected,
@@ -1485,6 +1533,59 @@ export class LevelScene extends Phaser.Scene {
     }
   }
 
+  private getTokenBudgetSnapshot(): TokenBudgetSnapshot {
+    return evaluateTokenBudget(this.tokenInputEstimate, this.tokenOutputEstimate, this.tokenContextWindow);
+  }
+
+  private updateTokenLabHud(): void {
+    const budget = this.getTokenBudgetSnapshot();
+    this.hud.updateTokenLab({
+      inputTokens: budget.estimatedInputTokens,
+      outputTokens: budget.estimatedOutputTokens,
+      contextWindow: budget.contextWindow,
+      remainingTokens: budget.remainingTokens,
+      masteryLabel: budget.masteryLabel,
+    });
+  }
+
+  private updateTokenCurriculumGuidance(time: number): void {
+    const budget = this.getTokenBudgetSnapshot();
+    const topic = this.currentLearningTopic;
+    while (
+      this.tokenMilestoneCursor < this.tokenMilestoneBudgets.length &&
+      budget.estimatedTotalTokens >= this.tokenMilestoneBudgets[this.tokenMilestoneCursor]
+    ) {
+      const milestone = this.tokenMilestoneBudgets[this.tokenMilestoneCursor];
+      const ratio = budget.outputToInputRatio.toFixed(2);
+      if (this.tokenMilestoneCursor === 0) {
+        this.hud.showTokenCurriculumNote(
+          "Lesson Checkpoint",
+          `${topic.whyItMatters} Token use: ${milestone} total, output/input ratio ${ratio}.`,
+          time,
+          `Concept link: ${topic.objectiveLink}`,
+        );
+      } else {
+        this.hud.showTokenCurriculumNote(
+          "Context Window Check",
+          `${topic.metaphor} Window use: ${budget.estimatedTotalTokens}/${budget.contextWindow}.`,
+          time,
+          "Trim repeated instructions before sending another long prompt.",
+        );
+      }
+      this.tokenMilestoneCursor += 1;
+    }
+
+    if (!this.tokenOverflowLessonShown && budget.remainingTokens < 0) {
+      this.tokenOverflowLessonShown = true;
+      this.hud.showTokenCurriculumNote(
+        "Context Overflow",
+        `You exceeded the context window by ${Math.abs(budget.remainingTokens)} tokens. ${topic.takeaway}`,
+        time,
+        "In real AI chats, older details can be pushed out when this happens.",
+      );
+    }
+  }
+
   private updateQuotaReadyShineState(time: number): void {
     const halfwayQuota = Math.max(1, Math.ceil(this.effectiveQuota * 0.5));
     const halfwayReady = this.collected >= halfwayQuota;
@@ -1497,6 +1598,13 @@ export class LevelScene extends Phaser.Scene {
     if (halfwayReady && !this.halfQuotaGlowActive) {
       this.halfQuotaGlowActive = true;
       this.hud.flashCheckpoint("Halfway! Fairy form awakened");
+      const budget = this.getTokenBudgetSnapshot();
+      this.hud.showTokenCurriculumNote(
+        "Mid-Level Learning Check",
+        `${this.currentLearningTopic.objectiveLink} Budget: ${budget.estimatedTotalTokens}/${budget.contextWindow}.`,
+        time,
+        `Current style rating: ${budget.masteryLabel}.`,
+      );
       const pulse = this.add.circle(this.player.x, this.player.y, 10, 0xff8ed6, 0.24);
       pulse.setDepth(18);
       this.tweens.add({
@@ -1511,6 +1619,13 @@ export class LevelScene extends Phaser.Scene {
     if (quotaReady && !this.quotaReadyShineActive) {
       this.quotaReadyShineActive = true;
       this.hud.flashCheckpoint("Quota met! You are shining");
+      const budget = this.getTokenBudgetSnapshot();
+      this.hud.showTokenCurriculumNote(
+        "Exit Lesson",
+        this.currentLearningTopic.takeaway,
+        time,
+        `Before exiting, check budget: ${budget.estimatedTotalTokens}/${budget.contextWindow}.`,
+      );
     }
 
     if (time >= this.nextQuotaSparkleAt) {
@@ -1770,7 +1885,21 @@ export class LevelScene extends Phaser.Scene {
       score,
     });
     this.setDomFlag("loopyLevelCompleted", String(this.level.id));
-    this.hud.showTokenLesson("chapter", this.time.now);
+    const tokenBudget = this.getTokenBudgetSnapshot();
+    const nextTopic = getLearningTopicForLevel(this.level.id + 1);
+    const masteryHint =
+      tokenBudget.masteryTier === "efficient"
+        ? "Excellent token discipline. You kept prompts and outputs compact."
+        : tokenBudget.masteryTier === "balanced"
+          ? "Solid balance. You used tokens well, with some room to compress further."
+          : "Verbose round. Next level, shorten prompts and ask for shorter answers.";
+    this.hud.showTokenCurriculumNote(
+      `Level ${this.level.id} Recap: ${this.currentLearningTopic.title}`,
+      `Input ${tokenBudget.estimatedInputTokens}, Output ${tokenBudget.estimatedOutputTokens}, Total ${tokenBudget.estimatedTotalTokens}/${tokenBudget.contextWindow}.`,
+      this.time.now,
+      `${this.currentLearningTopic.takeaway} Next: ${nextTopic.title}. ${masteryHint}`,
+      6200,
+    );
 
     this.audioSystem.stopMusic();
 

@@ -37,6 +37,16 @@ export class PauseScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 
+    const academy = this.add
+      .text(width * 0.5, height * 0.5 + 148, "Token Academy", {
+        fontSize: "28px",
+        color: "#052519",
+        backgroundColor: "#c8ffe8",
+        padding: { x: 16, y: 8 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
     const resumeGame = (): void => {
       this.scene.stop();
       this.scene.resume("LevelScene");
@@ -46,6 +56,9 @@ export class PauseScene extends Phaser.Scene {
     map.on("pointerdown", () => {
       this.scene.stop("LevelScene");
       this.scene.start("WorldMapScene");
+    });
+    academy.on("pointerdown", () => {
+      this.scene.start("TokenAcademyScene", { returnScene: "PauseScene", startModuleId: 1 });
     });
 
     this.input.keyboard?.once("keydown-P", resumeGame);

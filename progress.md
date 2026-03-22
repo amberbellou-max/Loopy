@@ -27,3 +27,88 @@ Original prompt: Build and iterate a playable web game in this workspace, valida
   - level 16: 10 iterations
   - combo check: 4 iterations
 - Confirmed no `errors-*.json` generated in `output/web-game` and latest `state-*.json` snapshots report no sustained stalls.
+
+## 2026-03-20
+- Added a curriculum-focused Token Lab layer for AI literacy:
+  - new token budget planner/evaluator in `src/systems/tokenCurriculum.ts`
+  - live HUD token telemetry (input/output/context window + mastery label)
+  - curriculum prompts at level start, midpoint, quota-ready, budget milestones, overflow, and level recap
+- Integrated token curriculum state into `LevelScene` debug snapshot output (`render_game_to_text` now includes `level.tokenCurriculum`).
+- Added unit coverage for token curriculum math/classification in `tests/unit/tokenCurriculum.test.ts`.
+- Updated main menu copy to call out AI literacy token instruction.
+- Fixed tutor UX conflict: token lesson dismiss key moved from `Space` to `Esc` so gameplay shooting does not hide curriculum cards immediately.
+- Validation:
+  - `npm run test` passed (29/29).
+  - `npx tsc --noEmit` passed.
+  - Ran `web_game_playwright_client` loop against `/?e2e=1&autolevel=1` and reviewed screenshots/state outputs.
+  - Verified screenshots show Token Lab HUD and Token Lab Goal panel.
+  - Verified state snapshots include `tokenCurriculum` metrics and no `errors-*.json` artifacts were produced.
+- Note: `npm run test:e2e` was started and appears to hang during the Playwright webServer/build phase in this environment.
+- Integrated user-provided curriculum content directly:
+  - Added `src/data/tokenModules.ts` with all 8 modules plus assumption ledger, missing inputs, one lever, reversible step, safeguard, and A->I->G->G->V flow.
+  - Rebased `src/data/tokenLessons.ts` to derive lesson cards from module content.
+- Added optional `TokenAcademyScene` for full curriculum browsing without interrupting gameplay; wired access from Main Menu and Pause menu.
+- Updated level-start curriculum card to show module content tied to current level progression (`Module N` rotates by level).
+- Improved token tutor panel layout to dynamically reflow text and resize height, preventing overlap with longer curriculum lines.
+- Additional visual validation:
+  - In-level module panel + Token Lab HUD verified in `output/web-game/shot-0.png`.
+  - Academy desktop screen verified in `output/web-game/academy-shot.png`.
+  - Mobile viewport captures generated (`academy-mobile-shot.png`, `academy-mobile-landscape-shot.png`) for readability checks.
+
+## 2026-03-22
+- Extended in-level education readability timing:
+  - `showTokenLesson`: duration/cooldown updated to 5600ms/9200ms.
+  - `showTokenCurriculumNote`: default duration updated to 6800ms with longer cooldown floor/ratio.
+- Added/kept token education in world-map lobby:
+  - `WorldMapScene` now shows a top "Token Focus" panel driven by `tokenModules` for the selected level.
+  - Added/kept `Token Academy` button directly in world map for optional curriculum browsing.
+- Fixed world-map readability regression by moving the "Highest unlocked level" label above the token panel.
+- Validation completed:
+  - `npm run test` passed (29/29).
+  - `npx tsc --noEmit` passed.
+  - Ran `$WEB_GAME_CLIENT` on `/?e2e=1&autolevel=1` with a 360-frame burst; screenshot confirms the lesson card remains visible longer (`output/web-game/shot-0.png`).
+  - Captured fresh world-map screenshot after clicking "Start New Run"; confirms lobby token panel and buttons (`output/web-game/worldmap-lobby-token-shot.png`).
+  - Confirmed no `errors-*.json` artifacts in `output/web-game`.
+- Expanded curriculum to teach course topics across all levels using `NETS&TOKENS` content:
+  - Added `src/data/levelLearningTopics.ts` with 19 level-mapped topics:
+    - Levels 1-12: token literacy sequence
+    - Levels 13-19: neural-net foundations sequence
+  - Added helper `getLearningTopicForLevel(levelId)` for consistent mapping.
+- Integrated level topic flow into gameplay:
+  - `LevelScene` now pulls per-level learning topics and shows them at level start, curriculum milestones, midpoint, exit, and completion recap.
+  - Level start lesson title now reflects track/topic (Tokens or Neural Nets) and uses a longer display duration for readability.
+- Integrated level topic flow into world map:
+  - `WorldMapScene` focus panel now reflects selected level's current curriculum topic (track + core idea + takeaway).
+  - Kept `Token Academy` button and mapped start module safely against existing academy module count.
+- Validation for new curriculum flow:
+  - `npm run test` passed (29/29).
+  - `npx tsc --noEmit` passed.
+  - Visual checks:
+    - Level 1 topic overlay (`output/web-game/topic-l1/shot-0.png`)
+    - Level 13 neural-net overlay (`output/web-game/topic-l13/shot-0.png`)
+    - World map curriculum panel (`output/web-game/worldmap-topic-shot.png`)
+  - Confirmed no Playwright error artifacts in `output/web-game/topic-l1` and `output/web-game/topic-l13`.
+- Expanded `TokenAcademyScene` to include the full neural-net sequence (including slides 8-12 as academy-only extensions):
+  - Added `src/data/academyModules.ts` with 24 modules total:
+    - Modules 1-19 map to in-level curriculum topics.
+    - Modules 20-24 add neural-net extension topics: Forward Pass, Training Start, Learning Loop, Architecture Match, and Limits/Myths.
+  - Updated `TokenAcademyScene` to render `academyModules` instead of `tokenModules`, including track and "Taught in Level" vs "Academy Extension" metadata.
+  - Updated world-map academy entry to open `TokenAcademyScene` at the selected level's curriculum index (`startModuleId: selectedLevel`).
+- Validation for academy extension:
+  - `npm run test` passed (29/29).
+  - `npx tsc --noEmit` passed.
+  - Captured academy extension screenshots:
+    - Module 20 (`output/web-game/academy-module20-shot.png`)
+    - Module 24 (`output/web-game/academy-module24-shot.png`)
+- Added `Token Academy` filter bar:
+  - New track filters in `TokenAcademyScene`: `Tokens`, `Neural Nets`, `All`.
+  - Prev/Next now navigates within the active filter set.
+  - Counter now shows active filter and index inside that filtered view.
+  - Spacing adjusted so filter label/buttons do not overlap header subtitle.
+- Validation for filter UI:
+  - `npm run test` passed (29/29).
+  - `npx tsc --noEmit` passed.
+  - Captured filter-state screenshots:
+    - `All` view (`output/web-game/academy-filter-all-shot.png`)
+    - `Tokens` view (`output/web-game/academy-filter-tokens-shot.png`)
+    - `Neural Nets` view (`output/web-game/academy-filter-neural-shot.png`)

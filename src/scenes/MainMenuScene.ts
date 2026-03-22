@@ -24,16 +24,23 @@ export class MainMenuScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    this.add
+      .text(width * 0.5, 230, "AI Literacy Mode: learn token budgeting while you play", {
+        fontSize: "20px",
+        color: "#b8f1d7",
+      })
+      .setOrigin(0.5);
+
     const save = SaveSystem.load();
 
-    const startButton = this.makeButton(width * 0.5, 310, "Start New Run", () => {
+    const startButton = this.makeButton(width * 0.5, 330, "Start New Run", () => {
       SaveSystem.reset();
       this.scene.start("WorldMapScene", { selectedLevel: 1 });
     });
 
     const continueButton = this.makeButton(
       width * 0.5,
-      390,
+      410,
       `Continue (Level ${save.highestUnlockedLevel})`,
       () => {
         this.scene.start("WorldMapScene", { selectedLevel: save.highestUnlockedLevel });
@@ -45,15 +52,26 @@ export class MainMenuScene extends Phaser.Scene {
       continueButton.disableInteractive();
     }
 
+    const academyButton = this.makeButton(width * 0.5, 490, "Token Academy", () => {
+      this.scene.start("TokenAcademyScene", { returnScene: "MainMenuScene", startModuleId: 1 });
+    });
+
     this.add
-      .text(width * 0.5, height - 60, "Keyboard: WASD/Arrows, Space, Shift | Touch controls on mobile", {
-        fontSize: "18px",
+      .text(width * 0.5, height - 74, "Keyboard: WASD/Arrows, Space, Shift | Touch controls on mobile", {
+        fontSize: "17px",
         color: "#b6d9ca",
       })
       .setOrigin(0.5);
 
+    this.add
+      .text(width * 0.5, height - 46, "HUD tracks input/output tokens and context window in each level.", {
+        fontSize: "16px",
+        color: "#9fd9c1",
+      })
+      .setOrigin(0.5);
+
     this.tweens.add({
-      targets: [startButton, continueButton],
+      targets: [startButton, continueButton, academyButton],
       y: "-=6",
       yoyo: true,
       duration: 1400,

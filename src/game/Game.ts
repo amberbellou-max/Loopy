@@ -6,6 +6,7 @@ import { LevelScene } from "../scenes/LevelScene";
 import { MainMenuScene } from "../scenes/MainMenuScene";
 import { PauseScene } from "../scenes/PauseScene";
 import { PreloadScene } from "../scenes/PreloadScene";
+import { TokenAcademyScene } from "../scenes/TokenAcademyScene";
 import { VictoryScene } from "../scenes/VictoryScene";
 import { WorldMapScene } from "../scenes/WorldMapScene";
 
@@ -45,6 +46,7 @@ export function createGame(parent: string, options: CreateGameOptions = {}): Pha
       BootScene,
       PreloadScene,
       MainMenuScene,
+      TokenAcademyScene,
       WorldMapScene,
       LevelScene,
       PauseScene,
