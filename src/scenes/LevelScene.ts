@@ -1,6 +1,11 @@
 import Phaser from "phaser";
 import { DAMAGE } from "../data/balance";
-import { getLearningTopicForLevel, type LevelLearningTopic } from "../data/levelLearningTopics";
+import {
+  getLearningInGameExample,
+  getLearningTopicForLevel,
+  getLearningTryItPrompt,
+  type LevelLearningTopic,
+} from "../data/levelLearningTopics";
 import { getLevelById, MAX_LEVEL_ID } from "../data/levels";
 import { getUnlockedAbilities } from "../data/upgrades";
 import { ArcaneBoss } from "../entities/ArcaneBoss";
@@ -277,6 +282,7 @@ export class LevelScene extends Phaser.Scene {
     this.updateTokenLabHud();
     this.hud.flashCheckpoint(`Level ${this.level.id}: Eat ${this.effectiveQuota} food`);
     const trackLabel = this.currentLearningTopic.track === "tokens" ? "Tokens" : "Neural Nets";
+    const inGameExample = getLearningInGameExample(levelId);
     this.time.delayedCall(550, () => {
       if (this.completed) {
         return;
@@ -285,8 +291,8 @@ export class LevelScene extends Phaser.Scene {
         `Level ${this.level.id} Focus (${trackLabel})`,
         `${this.currentLearningTopic.title}: ${this.currentLearningTopic.coreIdea}`,
         this.time.now,
-        `Why it matters: ${this.currentLearningTopic.whyItMatters}`,
-        7600,
+        `In Loopy: ${inGameExample}`,
+        8800,
       );
     });
     if (this.inputSystem.isTouchControlsEnabled()) {
@@ -1562,14 +1568,14 @@ export class LevelScene extends Phaser.Scene {
           "Lesson Checkpoint",
           `${topic.whyItMatters} Token use: ${milestone} total, output/input ratio ${ratio}.`,
           time,
-          `Concept link: ${topic.objectiveLink}`,
+          `In Loopy: ${getLearningInGameExample(this.level.id)}`,
         );
       } else {
         this.hud.showTokenCurriculumNote(
           "Context Window Check",
           `${topic.metaphor} Window use: ${budget.estimatedTotalTokens}/${budget.contextWindow}.`,
           time,
-          "Trim repeated instructions before sending another long prompt.",
+          `Try this: ${getLearningTryItPrompt(this.level.id)}`,
         );
       }
       this.tokenMilestoneCursor += 1;
@@ -1581,7 +1587,7 @@ export class LevelScene extends Phaser.Scene {
         "Context Overflow",
         `You exceeded the context window by ${Math.abs(budget.remainingTokens)} tokens. ${topic.takeaway}`,
         time,
-        "In real AI chats, older details can be pushed out when this happens.",
+        `In Loopy: ${getLearningInGameExample(this.level.id)}`,
       );
     }
   }
@@ -1603,7 +1609,7 @@ export class LevelScene extends Phaser.Scene {
         "Mid-Level Learning Check",
         `${this.currentLearningTopic.objectiveLink} Budget: ${budget.estimatedTotalTokens}/${budget.contextWindow}.`,
         time,
-        `Current style rating: ${budget.masteryLabel}.`,
+        `Try this now: ${getLearningTryItPrompt(this.level.id)}`,
       );
       const pulse = this.add.circle(this.player.x, this.player.y, 10, 0xff8ed6, 0.24);
       pulse.setDepth(18);
@@ -1624,7 +1630,7 @@ export class LevelScene extends Phaser.Scene {
         "Exit Lesson",
         this.currentLearningTopic.takeaway,
         time,
-        `Before exiting, check budget: ${budget.estimatedTotalTokens}/${budget.contextWindow}.`,
+        `Before exiting, check budget: ${budget.estimatedTotalTokens}/${budget.contextWindow}. In Loopy: ${getLearningInGameExample(this.level.id)}`,
       );
     }
 
@@ -1897,13 +1903,13 @@ export class LevelScene extends Phaser.Scene {
       `Level ${this.level.id} Recap: ${this.currentLearningTopic.title}`,
       `Input ${tokenBudget.estimatedInputTokens}, Output ${tokenBudget.estimatedOutputTokens}, Total ${tokenBudget.estimatedTotalTokens}/${tokenBudget.contextWindow}.`,
       this.time.now,
-      `${this.currentLearningTopic.takeaway} Next: ${nextTopic.title}. ${masteryHint}`,
-      6200,
+      `${this.currentLearningTopic.takeaway} Next: ${nextTopic.title}. Try: ${getLearningTryItPrompt(this.level.id + 1)}. ${masteryHint}`,
+      7600,
     );
 
     this.audioSystem.stopMusic();
 
-    this.time.delayedCall(900, () => {
+    this.time.delayedCall(3400, () => {
       if (this.level.id >= MAX_LEVEL_ID) {
         const totalScore = Object.values(save.levelBestScores).reduce((acc, value) => acc + value, 0);
         this.scene.start("VictoryScene", { totalScore });

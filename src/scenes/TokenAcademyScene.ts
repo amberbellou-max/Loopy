@@ -1,13 +1,5 @@
 import Phaser from "phaser";
 import { academyModules } from "../data/academyModules";
-import {
-  tokenAssumptionLedger,
-  tokenMissingInputs,
-  tokenOneLever,
-  tokenPromptFlow,
-  tokenReversibleNextStep,
-  tokenSafeguard,
-} from "../data/tokenModules";
 
 interface TokenAcademyData {
   returnScene?: "MainMenuScene" | "PauseScene" | "WorldMapScene";
@@ -73,7 +65,7 @@ export class TokenAcademyScene extends Phaser.Scene {
     };
 
     const cardTop = compact ? 166 : 202;
-    const cardBottomPadding = compact ? 168 : 196;
+    const cardBottomPadding = compact ? 84 : 90;
     const cardWidth = Math.min(980, width - 42);
     const cardHeight = Math.max(compact ? 220 : 260, height - cardTop - cardBottomPadding);
     this.add
@@ -102,16 +94,6 @@ export class TokenAcademyScene extends Phaser.Scene {
       lineSpacing: compact ? 5 : 7,
     });
 
-    this.add
-      .text(width * 0.5, height - (compact ? 106 : 124), this.buildCourseNotesText(), {
-        fontSize: compact ? "12px" : "14px",
-        color: "#bdeeda",
-        align: "center",
-        wordWrap: { width: width - 52 },
-        lineSpacing: compact ? 2 : 3,
-      })
-      .setOrigin(0.5);
-
     this.makeButton(width * 0.5 - 210, height - 42, "Prev", () => this.moveModule(-1));
     this.makeButton(width * 0.5 - 42, height - 42, "Next", () => this.moveModule(1));
     this.makeButton(width * 0.5 + 198, height - 42, this.getBackLabel(), () => this.goBack());
@@ -132,17 +114,6 @@ export class TokenAcademyScene extends Phaser.Scene {
   private readonly handlePrev = (): void => this.moveModule(-1);
   private readonly handleNext = (): void => this.moveModule(1);
   private readonly handleBack = (): void => this.goBack();
-
-  private buildCourseNotesText(): string {
-    return [
-      `Assumptions: ${tokenAssumptionLedger.join(", ")}`,
-      `Missing Inputs: ${tokenMissingInputs.join(", ")}`,
-      `One Lever: ${tokenOneLever}`,
-      `Reversible Next Step: ${tokenReversibleNextStep}`,
-      `Safeguard: ${tokenSafeguard}`,
-      `A->I->G->G->V: ${tokenPromptFlow.join(" | ")}`,
-    ].join("\n");
-  }
 
   private getBackLabel(): string {
     if (this.returnScene === "PauseScene") {
@@ -266,9 +237,10 @@ export class TokenAcademyScene extends Phaser.Scene {
       [
         `Core idea: ${module.definition}`,
         `Key idea: ${module.keyIdea}`,
-        "Examples:",
-        `- ${module.examples[0]}`,
-        `- ${module.examples[1]}`,
+        "",
+        `In Loopy: ${module.inGameExample}`,
+        `Try this: ${module.tryIt}`,
+        "",
         `Takeaway: ${module.takeaway}`,
       ].join("\n"),
     );

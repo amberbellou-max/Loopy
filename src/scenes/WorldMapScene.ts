@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { getLearningTopicForLevel } from "../data/levelLearningTopics";
+import { getLearningInGameExample, getLearningTopicForLevel } from "../data/levelLearningTopics";
 import { SaveSystem } from "../systems/SaveSystem";
 import { MAX_LEVEL_ID } from "../data/levels";
 
@@ -35,6 +35,7 @@ export class WorldMapScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const focusTopic = getLearningTopicForLevel(selectedLevel);
+    const focusGameExample = getLearningInGameExample(selectedLevel);
     const focusTrackLabel = focusTopic.track === "tokens" ? "Tokens" : "Neural Nets";
     const tokenPanelWidth = Phaser.Math.Clamp(width - 56, 340, 980);
     const tokenPanelHeight = compact ? 94 : 106;
@@ -54,7 +55,7 @@ export class WorldMapScene extends Phaser.Scene {
       .text(
         width * 0.5,
         tokenPanelY + 6,
-        `Core idea: ${focusTopic.coreIdea}\nTakeaway: ${focusTopic.takeaway}`,
+        `Core idea: ${focusTopic.coreIdea}\nIn Loopy: ${focusGameExample}`,
         {
           fontSize: compact ? "14px" : "17px",
           color: "#bcf6df",

@@ -210,3 +210,57 @@ export function getLearningTopicForLevel(levelId: number): LevelLearningTopic {
   const index = Phaser.Math.Wrap(levelId - 1, 0, levelLearningTopics.length);
   return levelLearningTopics[index];
 }
+
+const inGameExamplesByTopicId: Record<number, string> = {
+  1: "When you eat food, Token Lab 'in' increases. You are feeding the model context.",
+  2: "A short-looking action can still move token counts a lot. Watch the HUD numbers, not just text length.",
+  3: "As you fire glitter bursts, 'out' rises in chunks. Output is tokenized piece by piece.",
+  4: "Each action updates the next state step-by-step, like next-token prediction updates sequence state.",
+  5: "Track order matters: if you spam shots early, your output budget changes before checkpoint decisions.",
+  6: "Near the end of a run, low 'Window left' shows context pressure. You must prioritize what to keep.",
+  7: "Different response styles (Efficient/Balanced/Verbose) mimic different tokenization/output behaviors.",
+  8: "If total usage approaches the cap, your available context shrinks just like model working memory.",
+  9: "Long fights and extra shots raise token cost. Cleaner play keeps budget and speed healthier.",
+  10: "Small behavior changes, like burst timing, can shift token totals even if the level goal is the same.",
+  11: "Input and output both count in your run. You can overflow from either side if you ignore both.",
+  12: "Your full run history becomes a numbered budget story: in + out + remaining context.",
+  13: "Enemies expose patterns; you learn and react. That mirrors pattern recognition in neural nets.",
+  14: "Level state goes in (position, enemies, hazards) and your control choice outputs the next result.",
+  15: "Each tiny decision (move, shoot, dash) is like a small neuron vote inside a bigger strategy.",
+  16: "If you overvalue one signal (only shooting), performance drops. Good weighting improves outcomes.",
+  17: "Activation is like commitment: only strong opportunities should trigger high-cost actions.",
+  18: "Early play reads simple cues; later play combines cues into higher-level plans.",
+  19: "Each death/adjustment loop is training: observe error, adjust, then perform better next attempt.",
+};
+
+const tryItPromptsByTopicId: Record<number, string> = {
+  1: "Eat 3 foods without firing and watch only the input counter rise.",
+  2: "Compare one run with short bursts vs long bursts and note token differences.",
+  3: "Fire single shots, then hold fire, and compare output growth speed.",
+  4: "Pause after each action and predict which HUD token value will change next.",
+  5: "Run the same route twice with different action order and compare totals.",
+  6: "When window gets low, stop unnecessary shots and preserve context room.",
+  7: "Aim for Efficient style once, then intentionally reach Verbose and compare.",
+  8: "Before checkpoint, check Window left and decide if you can afford extra output.",
+  9: "Try a low-shot run and see how total token usage and flow improve.",
+  10: "Make one small timing change and observe how token totals shift.",
+  11: "Keep both input and output visible and call out which side is dominating.",
+  12: "Finish with at least 20% window remaining.",
+  13: "Identify one repeated enemy pattern and counter it consistently.",
+  14: "Call out one input signal, one action, and one outcome during play.",
+  15: "Use one action only when two cues align (position + threat).",
+  16: "Rebalance: if one tactic fails, intentionally shift to a different one.",
+  17: "Only trigger specials when reward is high; avoid low-value activations.",
+  18: "Name simple cues first, then combine them into one plan.",
+  19: "After a mistake, state one adjustment and apply it immediately.",
+};
+
+export function getLearningInGameExample(levelId: number): string {
+  const topic = getLearningTopicForLevel(levelId);
+  return inGameExamplesByTopicId[topic.id] ?? "Watch Token Lab HUD and connect each action to token changes.";
+}
+
+export function getLearningTryItPrompt(levelId: number): string {
+  const topic = getLearningTopicForLevel(levelId);
+  return tryItPromptsByTopicId[topic.id] ?? "Use HUD token metrics to guide your next decision.";
+}

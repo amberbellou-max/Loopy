@@ -112,3 +112,24 @@ Original prompt: Build and iterate a playable web game in this workspace, valida
     - `All` view (`output/web-game/academy-filter-all-shot.png`)
     - `Tokens` view (`output/web-game/academy-filter-tokens-shot.png`)
     - `Neural Nets` view (`output/web-game/academy-filter-neural-shot.png`)
+- Major readability + pedagogy pass based on live UI feedback:
+  - Removed bottom curriculum ledger block from `TokenAcademyScene` to reduce clutter.
+  - Reframed academy lesson body to emphasize:
+    - `Core idea`
+    - `Key idea`
+    - `In Loopy` (direct in-game example)
+    - `Try this` (playable action prompt)
+    - `Takeaway`
+  - Added per-level gameplay examples/prompts in `levelLearningTopics` helpers:
+    - `getLearningInGameExample(levelId)`
+    - `getLearningTryItPrompt(levelId)`
+  - Updated level overlays to use in-game examples and practice prompts instead of abstract lines.
+  - Increased level-start lesson readability duration and increased level-complete scene transition delay so recap cards are readable before scene switch.
+  - Updated world-map focus panel to show `In Loopy` practical examples.
+- Validation for redesign:
+  - `npm run test` passed (29/29).
+  - `npx tsc --noEmit` passed.
+  - Visual checks:
+    - Academy redesign (`output/web-game/academy-redesign-all.png`, `academy-redesign-tokens.png`, `academy-redesign-neural.png`)
+    - World map practical token example panel (`output/web-game/worldmap-in-loopy-focus.png`)
+    - In-level start lesson with explicit game example (`output/web-game/level-in-loopy/shot-0.png`)
