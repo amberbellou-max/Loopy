@@ -16,6 +16,7 @@ export class TokenAcademyScene extends Phaser.Scene {
   private filterButtons!: Record<AcademyFilter, Phaser.GameObjects.Text>;
 
   private moduleCounterText!: Phaser.GameObjects.Text;
+  private moduleViewText!: Phaser.GameObjects.Text;
   private titleText!: Phaser.GameObjects.Text;
   private contentText!: Phaser.GameObjects.Text;
 
@@ -30,7 +31,8 @@ export class TokenAcademyScene extends Phaser.Scene {
     this.returnScene = data.returnScene ?? "MainMenuScene";
     this.moduleIndex = Phaser.Math.Clamp((data.startModuleId ?? 1) - 1, 0, academyModules.length - 1);
 
-    this.add.rectangle(width * 0.5, height * 0.5, width, height, 0x062319, 1);
+    this.add.rectangle(width * 0.5, height * 0.5, width, height, 0x041f16, 1);
+    this.add.rectangle(width * 0.5, height * 0.5, width * 0.92, height, 0x032118, 0.62);
     this.add
       .rectangle(width * 0.5, compact ? 58 : 66, width - 28, compact ? 88 : 100, 0x0d3a2a, 0.9)
       .setStrokeStyle(2, 0x7df4cb, 0.8);
@@ -52,42 +54,50 @@ export class TokenAcademyScene extends Phaser.Scene {
 
     const filterY = compact ? 126 : 146;
     this.add
-      .text(width * 0.5, filterY - (compact ? 22 : 24), "Browse Track", {
-        fontSize: compact ? "14px" : "17px",
+      .text(width * 0.5, filterY - (compact ? 18 : 22), "Browse Track", {
+        fontSize: compact ? "15px" : "18px",
         color: "#b8f3dd",
+        fontStyle: "bold",
       })
       .setOrigin(0.5);
 
     this.filterButtons = {
-      tokens: this.makeFilterButton(width * 0.27, filterY, "Tokens", () => this.applyFilter("tokens")),
+      tokens: this.makeFilterButton(width * 0.28, filterY, "Tokens", () => this.applyFilter("tokens")),
       "neural-nets": this.makeFilterButton(width * 0.5, filterY, "Neural Nets", () => this.applyFilter("neural-nets")),
-      all: this.makeFilterButton(width * 0.73, filterY, "All", () => this.applyFilter("all")),
+      all: this.makeFilterButton(width * 0.72, filterY, "All", () => this.applyFilter("all")),
     };
 
-    const cardTop = compact ? 166 : 202;
-    const cardBottomPadding = compact ? 84 : 90;
+    const cardTop = compact ? 176 : 210;
+    const cardBottomPadding = compact ? 86 : 92;
     const cardWidth = Math.min(980, width - 42);
     const cardHeight = Math.max(compact ? 220 : 260, height - cardTop - cardBottomPadding);
-    this.add
-      .rectangle(width * 0.5, cardTop + cardHeight * 0.5, cardWidth, cardHeight, 0x082c20, 0.94)
-      .setStrokeStyle(2, 0x7deac6, 0.85);
+    this.add.rectangle(width * 0.5, cardTop + cardHeight * 0.5 + 2, cardWidth + 8, cardHeight + 8, 0x00120d, 0.35);
+    this.add.rectangle(width * 0.5, cardTop + cardHeight * 0.5, cardWidth, cardHeight, 0x072a1f, 0.95).setStrokeStyle(2, 0x7deac6, 0.9);
+    this.add.rectangle(width * 0.5, cardTop + 18, cardWidth - 10, 34, 0x0f4b39, 0.96);
 
     const left = width * 0.5 - cardWidth * 0.5 + 16;
-    const wrap = cardWidth - 32;
+    const wrap = cardWidth - 36;
 
-    this.moduleCounterText = this.add.text(left, cardTop + 10, "", {
+    this.moduleCounterText = this.add.text(left, cardTop + 4, "", {
       fontSize: compact ? "15px" : "18px",
-      color: "#a8f0d3",
+      color: "#d9fff1",
+      fontStyle: "bold",
     });
 
-    this.titleText = this.add.text(left, cardTop + 34, "", {
+    this.moduleViewText = this.add.text(left, cardTop + 28, "", {
+      fontSize: compact ? "14px" : "16px",
+      color: "#a8f0d3",
+      fontStyle: "bold",
+    });
+
+    this.titleText = this.add.text(left, cardTop + 52, "", {
       fontSize: compact ? "28px" : "34px",
       fontStyle: "bold",
       color: "#eafff6",
       wordWrap: { width: wrap },
     });
 
-    this.contentText = this.add.text(left, cardTop + (compact ? 80 : 92), "", {
+    this.contentText = this.add.text(left, cardTop + (compact ? 104 : 116), "", {
       fontSize: compact ? "16px" : "20px",
       color: "#cffff0",
       wordWrap: { width: wrap },
@@ -136,7 +146,7 @@ export class TokenAcademyScene extends Phaser.Scene {
         fontSize: "24px",
         color: "#032116",
         backgroundColor: "#95f8d3",
-        padding: { x: 16, y: 8 },
+        padding: { x: 18, y: 8 },
       })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
@@ -157,8 +167,8 @@ export class TokenAcademyScene extends Phaser.Scene {
       .text(x, y, label, {
         fontSize: "20px",
         color: "#cffff0",
-        backgroundColor: "#1b5541",
-        padding: { x: 12, y: 6 },
+        backgroundColor: "#184e3c",
+        padding: { x: 14, y: 7 },
       })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
@@ -229,9 +239,8 @@ export class TokenAcademyScene extends Phaser.Scene {
       this.currentFilter === "all" ? "All" : this.currentFilter === "tokens" ? "Tokens" : "Neural Nets";
     const filteredPos = this.filteredModuleIndices.indexOf(this.moduleIndex);
     const filteredCounter = filteredPos >= 0 ? `${filteredPos + 1}/${this.filteredModuleIndices.length}` : `1/${this.filteredModuleIndices.length}`;
-    this.moduleCounterText.setText(
-      `Module ${module.id}/${academyModules.length} | ${trackLabel} | ${taughtLabel}\nView: ${filterLabel} (${filteredCounter})`,
-    );
+    this.moduleCounterText.setText(`Module ${module.id}/${academyModules.length}  |  ${trackLabel}  |  ${taughtLabel}`);
+    this.moduleViewText.setText(`View: ${filterLabel} (${filteredCounter})`);
     this.titleText.setText(module.title);
     this.contentText.setText(
       [

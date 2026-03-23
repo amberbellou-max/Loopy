@@ -18,6 +18,9 @@ export class WorldMapScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const compact = width < 920;
 
+    this.add.rectangle(width * 0.5, height * 0.5, width, height, 0x05251c, 1);
+    this.add.rectangle(width * 0.5, height * 0.5, width * 0.92, height, 0x042016, 0.62);
+
     this.add
       .text(width * 0.5, 70, "World Map", {
         fontSize: "56px",
@@ -37,34 +40,37 @@ export class WorldMapScene extends Phaser.Scene {
     const focusTopic = getLearningTopicForLevel(selectedLevel);
     const focusGameExample = getLearningInGameExample(selectedLevel);
     const focusTrackLabel = focusTopic.track === "tokens" ? "Tokens" : "Neural Nets";
-    const tokenPanelWidth = Phaser.Math.Clamp(width - 56, 340, 980);
-    const tokenPanelHeight = compact ? 94 : 106;
-    const tokenPanelY = compact ? 174 : 170;
+    const tokenPanelWidth = Phaser.Math.Clamp(width - 64, 340, 1000);
+    const tokenPanelHeight = compact ? 126 : 142;
+    const tokenPanelY = compact ? 186 : 184;
+    const tokenPanelLeft = width * 0.5 - tokenPanelWidth * 0.5 + 20;
 
     this.add
       .rectangle(width * 0.5, tokenPanelY, tokenPanelWidth, tokenPanelHeight, 0x0a3025, 0.9)
-      .setStrokeStyle(2, 0x79e8c3, 0.86);
+      .setStrokeStyle(2, 0x79e8c3, 0.9);
+    this.add.rectangle(width * 0.5, tokenPanelY - tokenPanelHeight * 0.5 + 16, tokenPanelWidth - 10, 30, 0x0f4b39, 0.96);
     this.add
-      .text(width * 0.5, tokenPanelY - (compact ? 26 : 30), `AI Focus (${focusTrackLabel}, Level ${selectedLevel}): ${focusTopic.title}`, {
-        fontSize: compact ? "20px" : "24px",
+      .text(tokenPanelLeft, tokenPanelY - tokenPanelHeight * 0.5 + 4, `AI Focus (${focusTrackLabel}) · Level ${selectedLevel}`, {
+        fontSize: compact ? "16px" : "18px",
         color: "#dfffee",
         fontStyle: "bold",
       })
-      .setOrigin(0.5);
+      .setOrigin(0, 0);
     this.add
       .text(
-        width * 0.5,
-        tokenPanelY + 6,
-        `Core idea: ${focusTopic.coreIdea}\nIn Loopy: ${focusGameExample}`,
+        tokenPanelLeft,
+        tokenPanelY - tokenPanelHeight * 0.5 + 34,
+        `${focusTopic.title}\nCore idea: ${focusTopic.coreIdea}\nIn Loopy: ${focusGameExample}`,
         {
           fontSize: compact ? "14px" : "17px",
           color: "#bcf6df",
-          align: "center",
-          wordWrap: { width: tokenPanelWidth - 26 },
+          align: "left",
+          fontStyle: compact ? "normal" : "bold",
+          wordWrap: { width: tokenPanelWidth - 40 },
           lineSpacing: compact ? 3 : 5,
         },
       )
-      .setOrigin(0.5);
+      .setOrigin(0, 0);
 
     const cols = MAX_LEVEL_ID > 16 ? 5 : 4;
     const rows = Math.ceil(MAX_LEVEL_ID / cols);

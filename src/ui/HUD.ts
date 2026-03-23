@@ -11,6 +11,16 @@ interface TokenLabStatus {
   masteryLabel: string;
 }
 
+interface LevelRecapNote {
+  title: string;
+  subtitle: string;
+  body: string;
+  takeaway: string;
+  continueLabel?: string;
+  minVisibleMs?: number;
+  autoContinueMs?: number;
+}
+
 export class HUD {
   private readonly scene: Phaser.Scene;
   private readonly healthBg: Phaser.GameObjects.Rectangle;
@@ -32,22 +42,51 @@ export class HUD {
   private readonly bossLabel: Phaser.GameObjects.Text;
 
   private readonly tokenTutorContainer: Phaser.GameObjects.Container;
+  private readonly tokenTutorShadow: Phaser.GameObjects.Rectangle;
   private readonly tokenTutorBg: Phaser.GameObjects.Rectangle;
+  private readonly tokenTutorHeader: Phaser.GameObjects.Rectangle;
   private readonly tokenTutorTitle: Phaser.GameObjects.Text;
   private readonly tokenTutorBody: Phaser.GameObjects.Text;
   private readonly tokenTutorExample: Phaser.GameObjects.Text;
+  private readonly tokenTutorHint: Phaser.GameObjects.Text;
+
+  private readonly recapBackdrop: Phaser.GameObjects.Rectangle;
+  private readonly recapContainer: Phaser.GameObjects.Container;
+  private readonly recapShadow: Phaser.GameObjects.Rectangle;
+  private readonly recapCard: Phaser.GameObjects.Rectangle;
+  private readonly recapHeader: Phaser.GameObjects.Rectangle;
+  private readonly recapHeaderText: Phaser.GameObjects.Text;
+  private readonly recapTitle: Phaser.GameObjects.Text;
+  private readonly recapSubtitle: Phaser.GameObjects.Text;
+  private readonly recapBody: Phaser.GameObjects.Text;
+  private readonly recapTakeaway: Phaser.GameObjects.Text;
+  private readonly recapButtonBg: Phaser.GameObjects.Rectangle;
+  private readonly recapButtonLabel: Phaser.GameObjects.Text;
+  private readonly recapHint: Phaser.GameObjects.Text;
+
   private tokenTutorVisibleUntil = 0;
   private tokenTutorLastLessonId: string | null = null;
   private tokenTutorCooldownUntil = 0;
   private tokenTutorHideTimer: Phaser.Time.TimerEvent | null = null;
   private spaceDismissHandler: (() => void) | null = null;
+  private enterContinueHandler: (() => void) | null = null;
+  private spaceContinueHandler: (() => void) | null = null;
   private resizeHandler: (() => void) | null = null;
+
+  private recapContinueHandler: (() => void) | null = null;
+  private recapCanContinue = false;
+  private recapGateTimer: Phaser.Time.TimerEvent | null = null;
+  private recapAutoTimer: Phaser.Time.TimerEvent | null = null;
+  private recapButtonPulseTween: Phaser.Tweens.Tween | null = null;
+  private recapPanelWidth = 700;
+  private recapPanelHeight = 340;
+
   private healthFillMaxWidth = 196;
   private bossBarWidth = 480;
   private bossFillMaxWidth = 476;
-  private tokenTutorPanelWide = 560;
-  private tokenTutorPanelTall = 126;
-  private tokenTutorPanelShort = 102;
+  private tokenTutorPanelWide = 590;
+  private tokenTutorPanelTall = 176;
+  private tokenTutorPanelShort = 150;
   private tokenTutorCompact = false;
   private lastHealthRatio = 1;
   private bossVisible = false;
@@ -130,50 +169,164 @@ export class HUD {
     });
     this.checkpointText.setOrigin(0.5, 0);
 
-    const tutorPanelWidth = 560;
-    const tutorPanelHeight = 126;
+    const tutorPanelWidth = 590;
+    const tutorPanelHeight = 176;
+    this.tokenTutorShadow = scene.add
+      .rectangle(0, 0, tutorPanelWidth + 8, tutorPanelHeight + 8, 0x00130f, 0.42)
+      .setOrigin(0.5);
     this.tokenTutorBg = scene.add
-      .rectangle(0, 0, tutorPanelWidth, tutorPanelHeight, 0x08221c, 0.92)
+      .rectangle(0, 0, tutorPanelWidth, tutorPanelHeight, 0x073127, 0.95)
       .setOrigin(0.5)
-      .setStrokeStyle(2, 0x79e8c3, 0.9)
+      .setStrokeStyle(3, 0x84f3d1, 0.95)
       .setInteractive({ useHandCursor: true });
+    this.tokenTutorHeader = scene.add
+      .rectangle(0, -tutorPanelHeight * 0.5 + 18, tutorPanelWidth - 10, 32, 0x0f4b3a, 0.96)
+      .setOrigin(0.5);
 
-    this.tokenTutorTitle = scene.add.text(-tutorPanelWidth * 0.5 + 16, -46, "Token Tutor", {
+    this.tokenTutorTitle = scene.add.text(-tutorPanelWidth * 0.5 + 16, -tutorPanelHeight * 0.5 + 6, "Token Tutor", {
       color: "#d9fff2",
       fontSize: "22px",
       fontStyle: "bold",
       stroke: "#03170f",
       strokeThickness: 3,
       wordWrap: { width: tutorPanelWidth - 32 },
-    }).setOrigin(0, 0);
+    })
+      .setOrigin(0, 0)
+      .setLineSpacing(2);
 
-    this.tokenTutorBody = scene.add.text(-tutorPanelWidth * 0.5 + 16, -14, "", {
+    this.tokenTutorBody = scene.add.text(-tutorPanelWidth * 0.5 + 16, -32, "", {
       color: "#f2fff8",
       fontSize: "17px",
       stroke: "#03170f",
       strokeThickness: 2,
       wordWrap: { width: tutorPanelWidth - 32 },
-    }).setOrigin(0, 0);
+    })
+      .setOrigin(0, 0)
+      .setLineSpacing(4);
 
-    this.tokenTutorExample = scene.add.text(-tutorPanelWidth * 0.5 + 16, 32, "", {
+    this.tokenTutorExample = scene.add.text(-tutorPanelWidth * 0.5 + 16, 24, "", {
       color: "#b7ffe3",
       fontSize: "16px",
       stroke: "#03170f",
       strokeThickness: 2,
       wordWrap: { width: tutorPanelWidth - 32 },
+    })
+      .setOrigin(0, 0)
+      .setLineSpacing(3);
+    this.tokenTutorHint = scene.add.text(-tutorPanelWidth * 0.5 + 16, tutorPanelHeight * 0.5 - 26, "Tap card or press Esc to dismiss", {
+      color: "#8be9c6",
+      fontSize: "13px",
+      stroke: "#03170f",
+      strokeThickness: 1,
+      wordWrap: { width: tutorPanelWidth - 32 },
     }).setOrigin(0, 0);
 
     this.tokenTutorContainer = scene.add.container(scene.scale.width * 0.5, 110, [
+      this.tokenTutorShadow,
       this.tokenTutorBg,
+      this.tokenTutorHeader,
       this.tokenTutorTitle,
       this.tokenTutorBody,
       this.tokenTutorExample,
+      this.tokenTutorHint,
     ]);
     this.tokenTutorContainer.setVisible(false);
     this.tokenTutorContainer.alpha = 0;
-    this.tokenTutorContainer.setDepth(58);
+    this.tokenTutorContainer.setDepth(64);
     this.tokenTutorContainer.setScrollFactor(0);
     this.tokenTutorBg.on("pointerdown", () => this.dismissTokenLesson());
+
+    this.recapBackdrop = scene.add
+      .rectangle(0, 0, scene.scale.width, scene.scale.height, 0x010a07, 0.72)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(95)
+      .setInteractive({ useHandCursor: true });
+    this.recapBackdrop.on("pointerdown", () => this.tryContinueRecap());
+
+    this.recapShadow = scene.add.rectangle(0, 0, 708, 348, 0x010a07, 0.45).setOrigin(0.5);
+    this.recapCard = scene.add
+      .rectangle(0, 0, 700, 340, 0x072e24, 0.97)
+      .setOrigin(0.5)
+      .setStrokeStyle(3, 0x85f2d2, 0.95);
+    this.recapHeader = scene.add.rectangle(0, -152, 692, 38, 0x0f4a39, 0.98).setOrigin(0.5);
+    this.recapHeaderText = scene.add.text(-330, -166, "Level Recap", {
+      color: "#d9fff3",
+      fontSize: "18px",
+      fontStyle: "bold",
+      stroke: "#03170f",
+      strokeThickness: 2,
+    }).setOrigin(0, 0);
+    this.recapTitle = scene.add.text(-330, -126, "", {
+      color: "#effff8",
+      fontSize: "34px",
+      fontStyle: "bold",
+      stroke: "#03170f",
+      strokeThickness: 4,
+      wordWrap: { width: 660 },
+    }).setOrigin(0, 0);
+    this.recapSubtitle = scene.add.text(-330, -84, "", {
+      color: "#aef4d8",
+      fontSize: "18px",
+      stroke: "#03170f",
+      strokeThickness: 2,
+      wordWrap: { width: 660 },
+    }).setOrigin(0, 0);
+    this.recapBody = scene.add.text(-330, -46, "", {
+      color: "#dcfff3",
+      fontSize: "21px",
+      stroke: "#03170f",
+      strokeThickness: 2,
+      lineSpacing: 6,
+      wordWrap: { width: 660 },
+    }).setOrigin(0, 0);
+    this.recapTakeaway = scene.add.text(-330, 92, "", {
+      color: "#8df2cb",
+      fontSize: "19px",
+      fontStyle: "bold",
+      stroke: "#03170f",
+      strokeThickness: 2,
+      lineSpacing: 4,
+      wordWrap: { width: 660 },
+    }).setOrigin(0, 0);
+    this.recapButtonBg = scene.add
+      .rectangle(0, 142, 300, 46, 0x8ff8d3, 1)
+      .setOrigin(0.5)
+      .setStrokeStyle(2, 0x041f17, 0.95)
+      .setInteractive({ useHandCursor: true });
+    this.recapButtonBg.on("pointerdown", () => this.tryContinueRecap());
+    this.recapButtonLabel = scene.add.text(0, 142, "Continue", {
+      color: "#052519",
+      fontSize: "24px",
+      fontStyle: "bold",
+      stroke: "#d9fff2",
+      strokeThickness: 1,
+    }).setOrigin(0.5);
+    this.recapHint = scene.add.text(0, 172, "Reviewing recap...", {
+      color: "#a6f7d8",
+      fontSize: "16px",
+      stroke: "#03170f",
+      strokeThickness: 2,
+    }).setOrigin(0.5);
+
+    this.recapContainer = scene.add.container(scene.scale.width * 0.5, scene.scale.height * 0.5, [
+      this.recapShadow,
+      this.recapCard,
+      this.recapHeader,
+      this.recapHeaderText,
+      this.recapTitle,
+      this.recapSubtitle,
+      this.recapBody,
+      this.recapTakeaway,
+      this.recapButtonBg,
+      this.recapButtonLabel,
+      this.recapHint,
+    ]);
+    this.recapContainer.setScrollFactor(0);
+    this.recapContainer.setDepth(96);
+    this.recapContainer.setVisible(false);
+    this.recapContainer.alpha = 0;
+    this.recapBackdrop.setVisible(false);
 
     this.bossBarBg = scene.add.rectangle(scene.scale.width * 0.5, 54, 480, 16, 0x1a1d2f, 0.92).setOrigin(0.5, 0);
     this.bossBarFill = scene.add.rectangle(scene.scale.width * 0.5 - 238, 56, 476, 12, 0xea5f8c, 0.95).setOrigin(0, 0);
@@ -213,6 +366,10 @@ export class HUD {
         }
       };
       scene.input.keyboard.on("keydown-ESC", this.spaceDismissHandler);
+      this.enterContinueHandler = () => this.tryContinueRecap();
+      this.spaceContinueHandler = () => this.tryContinueRecap();
+      scene.input.keyboard.on("keydown-ENTER", this.enterContinueHandler);
+      scene.input.keyboard.on("keydown-SPACE", this.spaceContinueHandler);
     }
 
     this.resizeHandler = () => this.applyLayout();
@@ -333,6 +490,78 @@ export class HUD {
     );
   }
 
+  showLevelRecap(note: LevelRecapNote, onContinue: () => void): void {
+    if (this.recapGateTimer) {
+      this.recapGateTimer.remove(false);
+      this.recapGateTimer = null;
+    }
+    if (this.recapAutoTimer) {
+      this.recapAutoTimer.remove(false);
+      this.recapAutoTimer = null;
+    }
+    if (this.recapButtonPulseTween) {
+      this.recapButtonPulseTween.stop();
+      this.recapButtonPulseTween = null;
+    }
+
+    this.recapContinueHandler = onContinue;
+    this.recapCanContinue = false;
+
+    this.recapTitle.setText(note.title);
+    this.recapSubtitle.setText(note.subtitle);
+    this.recapBody.setText(note.body);
+    this.recapTakeaway.setText(`Takeaway: ${note.takeaway}`);
+    this.recapButtonLabel.setText(note.continueLabel ?? "Continue");
+    this.recapHint.setText("Recap locked for a few seconds so players can read.");
+    this.recapButtonBg.setFillStyle(0x4e7467, 1);
+    this.recapButtonLabel.setColor("#d6ebe2");
+
+    this.layoutRecapCard();
+
+    this.recapBackdrop.setVisible(true);
+    this.recapBackdrop.alpha = 0;
+    this.recapContainer.setVisible(true);
+    this.recapContainer.alpha = 0;
+    this.scene.tweens.killTweensOf([this.recapBackdrop, this.recapContainer]);
+    this.scene.tweens.add({
+      targets: this.recapBackdrop,
+      alpha: 1,
+      duration: 160,
+      ease: "Sine.Out",
+    });
+    this.scene.tweens.add({
+      targets: this.recapContainer,
+      alpha: 1,
+      duration: 180,
+      ease: "Sine.Out",
+    });
+
+    const minVisible = Math.max(1800, note.minVisibleMs ?? 5200);
+    const autoContinue = Math.max(minVisible + 3000, note.autoContinueMs ?? 17000);
+
+    this.recapGateTimer = this.scene.time.delayedCall(minVisible, () => {
+      this.recapCanContinue = true;
+      this.recapHint.setText("Press Enter/Space or click Continue");
+      this.recapButtonBg.setFillStyle(0x8ff8d3, 1);
+      this.recapButtonLabel.setColor("#052519");
+      this.recapButtonPulseTween = this.scene.tweens.add({
+        targets: this.recapButtonBg,
+        scaleX: 1.03,
+        scaleY: 1.03,
+        duration: 680,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.InOut",
+      });
+      this.recapGateTimer = null;
+    });
+
+    this.recapAutoTimer = this.scene.time.delayedCall(autoContinue, () => {
+      this.tryContinueRecap(true);
+      this.recapAutoTimer = null;
+    });
+  }
+
   dismissTokenLesson(): void {
     if (!this.tokenTutorContainer.visible) {
       return;
@@ -411,26 +640,58 @@ export class HUD {
       .setStroke("#03170f", compact ? 3 : 4)
       .setPosition(width * 0.5, margin + 6);
 
-    this.tokenTutorPanelWide = compact ? Phaser.Math.Clamp(width - margin * 2, 280, 460) : 560;
-    this.tokenTutorPanelTall = compact ? 112 : 126;
-    this.tokenTutorPanelShort = compact ? 92 : 102;
+    this.tokenTutorPanelWide = compact ? Phaser.Math.Clamp(width - margin * 2, 300, 500) : Phaser.Math.Clamp(width * 0.48, 560, 700);
+    this.tokenTutorPanelTall = compact ? 164 : 190;
+    this.tokenTutorPanelShort = compact ? 136 : 158;
+    this.tokenTutorShadow.setSize(this.tokenTutorPanelWide + 8, this.tokenTutorPanelTall + 8);
     this.tokenTutorBg.setSize(this.tokenTutorPanelWide, this.tokenTutorPanelTall);
-    this.tokenTutorContainer.setPosition(width * 0.5, compact ? 94 : 110);
+    this.tokenTutorHeader.setSize(this.tokenTutorPanelWide - 10, compact ? 30 : 34);
+    this.tokenTutorContainer.setPosition(width * 0.5, compact ? 106 : 122);
 
     this.tokenTutorTitle
-      .setFontSize(compact ? "18px" : "22px")
+      .setFontSize(compact ? "17px" : "24px")
       .setStroke("#03170f", compact ? 2 : 3)
-      .setWordWrapWidth(this.tokenTutorPanelWide - 24);
+      .setWordWrapWidth(this.tokenTutorPanelWide - 30);
     this.tokenTutorBody
-      .setFontSize(compact ? "15px" : "17px")
+      .setFontSize(compact ? "14px" : "18px")
       .setStroke("#03170f", compact ? 1 : 2)
-      .setWordWrapWidth(this.tokenTutorPanelWide - 24);
+      .setWordWrapWidth(this.tokenTutorPanelWide - 30)
+      .setLineSpacing(compact ? 2 : 4);
     this.tokenTutorExample
-      .setFontSize(compact ? "14px" : "16px")
+      .setFontSize(compact ? "13px" : "17px")
       .setStroke("#03170f", compact ? 1 : 2)
-      .setWordWrapWidth(this.tokenTutorPanelWide - 24);
+      .setWordWrapWidth(this.tokenTutorPanelWide - 30)
+      .setLineSpacing(compact ? 2 : 3);
+    this.tokenTutorHint
+      .setFontSize(compact ? "11px" : "13px")
+      .setStroke("#03170f", compact ? 1 : 1)
+      .setWordWrapWidth(this.tokenTutorPanelWide - 30);
     this.layoutTokenTutorText();
     this.applyTokenTutorHeight();
+
+    this.recapPanelWidth = compact ? Phaser.Math.Clamp(width - 30, 320, 660) : Phaser.Math.Clamp(width * 0.66, 640, 860);
+    this.recapBackdrop.setSize(width, height).setPosition(0, 0);
+    this.recapContainer.setPosition(width * 0.5, height * 0.5 + (compact ? 12 : 0));
+    this.recapTitle
+      .setFontSize(compact ? "27px" : "34px")
+      .setWordWrapWidth(this.recapPanelWidth - 40);
+    this.recapSubtitle
+      .setFontSize(compact ? "16px" : "19px")
+      .setWordWrapWidth(this.recapPanelWidth - 40);
+    this.recapBody
+      .setFontSize(compact ? "16px" : "21px")
+      .setWordWrapWidth(this.recapPanelWidth - 40)
+      .setLineSpacing(compact ? 4 : 6);
+    this.recapTakeaway
+      .setFontSize(compact ? "15px" : "18px")
+      .setWordWrapWidth(this.recapPanelWidth - 40);
+    this.recapHeaderText
+      .setFontSize(compact ? "15px" : "18px");
+    this.recapHint
+      .setFontSize(compact ? "13px" : "16px")
+      .setWordWrapWidth(this.recapPanelWidth - 42);
+    this.recapButtonLabel.setFontSize(compact ? "20px" : "24px");
+    this.layoutRecapCard();
 
     this.bossBarWidth = compact ? Phaser.Math.Clamp(Math.floor(width * 0.56), 220, 360) : 480;
     const bossBarHeight = compact ? 12 : 16;
@@ -474,7 +735,7 @@ export class HUD {
     this.tokenTutorBody.setText(lesson.body);
     if (lesson.example) {
       this.tokenTutorExample.setVisible(true);
-      this.tokenTutorExample.setText(`Example: ${lesson.example}`);
+      this.tokenTutorExample.setText(lesson.example);
     } else {
       this.tokenTutorExample.setVisible(false);
       this.tokenTutorExample.setText("");
@@ -505,24 +766,122 @@ export class HUD {
     const top = this.tokenTutorTitle.y;
     const bodyBottom = this.tokenTutorBody.y + this.tokenTutorBody.displayHeight;
     const exampleBottom = hasExample ? this.tokenTutorExample.y + this.tokenTutorExample.displayHeight : bodyBottom;
-    const textBottom = Math.max(bodyBottom, exampleBottom);
-    const desired = Math.ceil(textBottom - top + 22);
+    const hintBottom = this.tokenTutorHint.y + this.tokenTutorHint.displayHeight;
+    const textBottom = Math.max(bodyBottom, exampleBottom, hintBottom);
+    const desired = Math.ceil(textBottom - top + (this.tokenTutorCompact ? 28 : 38));
     const minHeight = hasExample ? this.tokenTutorPanelTall : this.tokenTutorPanelShort;
-    const maxHeight = hasExample ? 260 : 200;
-    this.tokenTutorBg.setSize(this.tokenTutorPanelWide, Phaser.Math.Clamp(desired, minHeight, maxHeight));
+    const maxHeight = hasExample ? 340 : 250;
+    const nextHeight = Phaser.Math.Clamp(desired, minHeight, maxHeight);
+    this.tokenTutorBg.setSize(this.tokenTutorPanelWide, nextHeight);
+    this.tokenTutorShadow.setSize(this.tokenTutorPanelWide + 8, nextHeight + 8);
+    this.tokenTutorHeader.setPosition(0, -nextHeight * 0.5 + this.tokenTutorHeader.height * 0.5 + 4);
+    this.layoutTokenTutorText();
   }
 
   private layoutTokenTutorText(): void {
-    const panelLeft = -this.tokenTutorPanelWide * 0.5 + 12;
-    const titleY = this.tokenTutorCompact ? -34 : -46;
-    const gap = this.tokenTutorCompact ? 6 : 8;
+    const panelLeft = -this.tokenTutorPanelWide * 0.5 + 14;
+    const panelTop = -this.tokenTutorBg.height * 0.5;
+    const titleY = panelTop + (this.tokenTutorCompact ? 7 : 10);
+    const gap = this.tokenTutorCompact ? 6 : 9;
 
     this.tokenTutorTitle.setPosition(panelLeft, titleY);
     this.tokenTutorBody.setPosition(panelLeft, titleY + this.tokenTutorTitle.displayHeight + gap);
     this.tokenTutorExample.setPosition(panelLeft, this.tokenTutorBody.y + this.tokenTutorBody.displayHeight + gap);
+    const anchorBottom = this.tokenTutorExample.visible
+      ? this.tokenTutorExample.y + this.tokenTutorExample.displayHeight
+      : this.tokenTutorBody.y + this.tokenTutorBody.displayHeight;
+    this.tokenTutorHint.setPosition(panelLeft, anchorBottom + gap);
+  }
+
+  private layoutRecapCard(): void {
+    const width = this.recapPanelWidth;
+    const contentWidth = width - 44;
+    this.recapTitle.setWordWrapWidth(contentWidth);
+    this.recapSubtitle.setWordWrapWidth(contentWidth);
+    this.recapBody.setWordWrapWidth(contentWidth);
+    this.recapTakeaway.setWordWrapWidth(contentWidth);
+    this.recapHint.setWordWrapWidth(contentWidth);
+
+    const headerHeight = this.tokenTutorCompact ? 34 : 38;
+    const topPadding = 14;
+    const gap = this.tokenTutorCompact ? 8 : 10;
+    const bottomPadding = 16;
+    const buttonHeight = this.tokenTutorCompact ? 42 : 46;
+
+    const desiredHeight = Math.ceil(
+      headerHeight
+        + topPadding
+        + this.recapTitle.displayHeight
+        + gap
+        + this.recapSubtitle.displayHeight
+        + gap
+        + this.recapBody.displayHeight
+        + gap
+        + this.recapTakeaway.displayHeight
+        + gap
+        + buttonHeight
+        + gap
+        + this.recapHint.displayHeight
+        + bottomPadding,
+    );
+    this.recapPanelHeight = Phaser.Math.Clamp(desiredHeight, this.tokenTutorCompact ? 300 : 330, this.tokenTutorCompact ? 560 : 610);
+
+    this.recapShadow.setSize(width + 10, this.recapPanelHeight + 10);
+    this.recapCard.setSize(width, this.recapPanelHeight);
+    this.recapHeader.setSize(width - 10, headerHeight);
+
+    const left = -width * 0.5 + 20;
+    const top = -this.recapPanelHeight * 0.5;
+    this.recapHeader.setPosition(0, top + headerHeight * 0.5 + 4);
+    this.recapHeaderText.setPosition(left, top + 8);
+    this.recapTitle.setPosition(left, this.recapHeaderText.y + this.recapHeaderText.displayHeight + 8);
+    this.recapSubtitle.setPosition(left, this.recapTitle.y + this.recapTitle.displayHeight + gap);
+    this.recapBody.setPosition(left, this.recapSubtitle.y + this.recapSubtitle.displayHeight + gap);
+    this.recapTakeaway.setPosition(left, this.recapBody.y + this.recapBody.displayHeight + gap);
+    this.recapButtonBg.setPosition(0, this.recapTakeaway.y + this.recapTakeaway.displayHeight + 28);
+    this.recapButtonLabel.setPosition(this.recapButtonBg.x, this.recapButtonBg.y);
+    this.recapHint.setPosition(0, this.recapButtonBg.y + 30);
+  }
+
+  private tryContinueRecap(force = false): void {
+    if (!this.recapContainer.visible) {
+      return;
+    }
+    if (!force && !this.recapCanContinue) {
+      return;
+    }
+    const next = this.recapContinueHandler;
+    this.hideRecap();
+    if (next) {
+      next();
+    }
+  }
+
+  private hideRecap(): void {
+    this.recapCanContinue = false;
+    this.recapContinueHandler = null;
+    if (this.recapGateTimer) {
+      this.recapGateTimer.remove(false);
+      this.recapGateTimer = null;
+    }
+    if (this.recapAutoTimer) {
+      this.recapAutoTimer.remove(false);
+      this.recapAutoTimer = null;
+    }
+    if (this.recapButtonPulseTween) {
+      this.recapButtonPulseTween.stop();
+      this.recapButtonPulseTween = null;
+    }
+    this.recapButtonBg.setScale(1);
+    this.scene.tweens.killTweensOf([this.recapBackdrop, this.recapContainer]);
+    this.recapBackdrop.setVisible(false);
+    this.recapContainer.setVisible(false);
+    this.recapBackdrop.alpha = 0;
+    this.recapContainer.alpha = 0;
   }
 
   destroy(): void {
+    this.hideRecap();
     if (this.resizeHandler) {
       this.scene.scale.off("resize", this.resizeHandler);
       this.resizeHandler = null;
@@ -530,6 +889,14 @@ export class HUD {
     if (this.spaceDismissHandler && this.scene.input.keyboard) {
       this.scene.input.keyboard.off("keydown-ESC", this.spaceDismissHandler);
       this.spaceDismissHandler = null;
+    }
+    if (this.enterContinueHandler && this.scene.input.keyboard) {
+      this.scene.input.keyboard.off("keydown-ENTER", this.enterContinueHandler);
+      this.enterContinueHandler = null;
+    }
+    if (this.spaceContinueHandler && this.scene.input.keyboard) {
+      this.scene.input.keyboard.off("keydown-SPACE", this.spaceContinueHandler);
+      this.spaceContinueHandler = null;
     }
     if (this.tokenTutorHideTimer) {
       this.tokenTutorHideTimer.remove(false);
@@ -550,6 +917,8 @@ export class HUD {
     this.bossBarBg.destroy();
     this.bossBarFill.destroy();
     this.bossLabel.destroy();
+    this.recapBackdrop.destroy();
+    this.recapContainer.destroy(true);
     this.tokenTutorContainer.destroy(true);
   }
 }

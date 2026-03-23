@@ -133,3 +133,26 @@ Original prompt: Build and iterate a playable web game in this workspace, valida
     - Academy redesign (`output/web-game/academy-redesign-all.png`, `academy-redesign-tokens.png`, `academy-redesign-neural.png`)
     - World map practical token example panel (`output/web-game/worldmap-in-loopy-focus.png`)
     - In-level start lesson with explicit game example (`output/web-game/level-in-loopy/shot-0.png`)
+
+## 2026-03-23
+- Education UI polish + recap flow update:
+  - Added a dedicated end-of-level recap modal in `HUD` that pauses progression, summarizes what was learned, connects it to run telemetry, and requires/auto-triggers continue after a readable gate.
+  - Replaced `LevelScene` auto-transition delay with callback-based transition after recap modal (`showLevelRecap`), including next-level guidance and mastery feedback.
+  - Improved in-level lesson card readability in `HUD`:
+    - stronger panel hierarchy (shadow + header band),
+    - increased minimum heights/padding,
+    - better text spacing and wrap,
+    - explicit dismiss hint.
+  - Improved `TokenAcademyScene` layering/readability:
+    - fixed metadata/title overlap by splitting metadata and view counter into separate lines,
+    - adjusted card/header spacing and visual hierarchy,
+    - refreshed filter/button styling.
+  - Improved `WorldMapScene` education panel:
+    - cleaner background layering,
+    - header strip + left-aligned multi-line focus card,
+    - clearer title/core-idea/in-game linkage.
+- Validation:
+  - `npx tsc --noEmit` passed.
+  - `npm run test` passed (29/29).
+  - `npm run build` passed.
+  - Attempted skill-loop screenshot capture with `web_game_playwright_client`; headless capture in this environment produced blank output at `output/web-game/ui-pass-academy/shot-0.png` despite successful script exit, so visual verification should be re-run on a normal desktop browser/session.

@@ -1899,24 +1899,42 @@ export class LevelScene extends Phaser.Scene {
         : tokenBudget.masteryTier === "balanced"
           ? "Solid balance. You used tokens well, with some room to compress further."
           : "Verbose round. Next level, shorten prompts and ask for shorter answers.";
-    this.hud.showTokenCurriculumNote(
-      `Level ${this.level.id} Recap: ${this.currentLearningTopic.title}`,
-      `Input ${tokenBudget.estimatedInputTokens}, Output ${tokenBudget.estimatedOutputTokens}, Total ${tokenBudget.estimatedTotalTokens}/${tokenBudget.contextWindow}.`,
-      this.time.now,
-      `${this.currentLearningTopic.takeaway} Next: ${nextTopic.title}. Try: ${getLearningTryItPrompt(this.level.id + 1)}. ${masteryHint}`,
-      7600,
-    );
 
     this.audioSystem.stopMusic();
 
-    this.time.delayedCall(3400, () => {
+    const continueToNextScene = () => {
       if (this.level.id >= MAX_LEVEL_ID) {
         const totalScore = Object.values(save.levelBestScores).reduce((acc, value) => acc + value, 0);
         this.scene.start("VictoryScene", { totalScore });
       } else {
         this.scene.start("WorldMapScene", { selectedLevel: Math.min(MAX_LEVEL_ID, this.level.id + 1) });
       }
-    });
+    };
+
+    const trackLabel = this.currentLearningTopic.track === "tokens" ? "Tokens" : "Neural Nets";
+    const hasNextLevel = this.level.id < MAX_LEVEL_ID;
+    const nextStepPrompt = hasNextLevel
+      ? `Next level focus: ${nextTopic.title}. Try this next: ${getLearningTryItPrompt(this.level.id + 1)}`
+      : "Final level complete. Open Token Academy from the map to review the full course.";
+    this.hud.showLevelRecap(
+      {
+        title: `Level ${this.level.id} Complete`,
+        subtitle: `${trackLabel} Focus: ${this.currentLearningTopic.title}`,
+        body:
+          [
+            `What you learned: ${this.currentLearningTopic.coreIdea}`,
+            `Why it matters: ${this.currentLearningTopic.whyItMatters}`,
+            `In this run: ${getLearningInGameExample(this.level.id)}`,
+            `Token Lab result: in ${tokenBudget.estimatedInputTokens} | out ${tokenBudget.estimatedOutputTokens} | total ${tokenBudget.estimatedTotalTokens}/${tokenBudget.contextWindow}.`,
+            nextStepPrompt,
+          ].join("\n"),
+        takeaway: `${this.currentLearningTopic.takeaway} ${masteryHint}`,
+        continueLabel: this.level.id >= MAX_LEVEL_ID ? "See Final Results" : "Continue to Map",
+        minVisibleMs: 5200,
+        autoContinueMs: 18000,
+      },
+      continueToNextScene,
+    );
   }
 
   private handleSnakeTailBite(payload: { x: number; y: number }): void {
