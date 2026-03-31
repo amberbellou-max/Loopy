@@ -289,7 +289,7 @@ export class LevelScene extends Phaser.Scene {
       }
       this.hud.showTokenCurriculumNote(
         `Level ${this.level.id} Focus (${trackLabel})`,
-        `${this.currentLearningTopic.title}: ${this.currentLearningTopic.coreIdea}`,
+        `Core idea: ${this.currentLearningTopic.coreIdea}`,
         this.time.now,
         `In Loopy: ${inGameExample}`,
         8800,
@@ -1566,16 +1566,16 @@ export class LevelScene extends Phaser.Scene {
       if (this.tokenMilestoneCursor === 0) {
         this.hud.showTokenCurriculumNote(
           "Lesson Checkpoint",
-          `${topic.whyItMatters} Token use: ${milestone} total, output/input ratio ${ratio}.`,
+          `Key idea: ${topic.whyItMatters}`,
           time,
-          `In Loopy: ${getLearningInGameExample(this.level.id)}`,
+          `In Loopy: ${getLearningInGameExample(this.level.id)}\nToken Lab now: total ${milestone}, output/input ratio ${ratio}.`,
         );
       } else {
         this.hud.showTokenCurriculumNote(
           "Context Window Check",
-          `${topic.metaphor} Window use: ${budget.estimatedTotalTokens}/${budget.contextWindow}.`,
+          `Metaphor: ${topic.metaphor}`,
           time,
-          `Try this: ${getLearningTryItPrompt(this.level.id)}`,
+          `Try this now: ${getLearningTryItPrompt(this.level.id)}\nWindow use: ${budget.estimatedTotalTokens}/${budget.contextWindow}.`,
         );
       }
       this.tokenMilestoneCursor += 1;
@@ -1585,9 +1585,9 @@ export class LevelScene extends Phaser.Scene {
       this.tokenOverflowLessonShown = true;
       this.hud.showTokenCurriculumNote(
         "Context Overflow",
-        `You exceeded the context window by ${Math.abs(budget.remainingTokens)} tokens. ${topic.takeaway}`,
+        `You exceeded the context window by ${Math.abs(budget.remainingTokens)} tokens.`,
         time,
-        `In Loopy: ${getLearningInGameExample(this.level.id)}`,
+        `In Loopy: ${getLearningInGameExample(this.level.id)}\nRecovery idea: ${topic.takeaway}`,
       );
     }
   }
@@ -1607,9 +1607,9 @@ export class LevelScene extends Phaser.Scene {
       const budget = this.getTokenBudgetSnapshot();
       this.hud.showTokenCurriculumNote(
         "Mid-Level Learning Check",
-        `${this.currentLearningTopic.objectiveLink} Budget: ${budget.estimatedTotalTokens}/${budget.contextWindow}.`,
+        `Why this level goal matters: ${this.currentLearningTopic.objectiveLink}`,
         time,
-        `Try this now: ${getLearningTryItPrompt(this.level.id)}`,
+        `Try this now: ${getLearningTryItPrompt(this.level.id)}\nBudget check: ${budget.estimatedTotalTokens}/${budget.contextWindow}.`,
       );
       const pulse = this.add.circle(this.player.x, this.player.y, 10, 0xff8ed6, 0.24);
       pulse.setDepth(18);
@@ -1628,9 +1628,9 @@ export class LevelScene extends Phaser.Scene {
       const budget = this.getTokenBudgetSnapshot();
       this.hud.showTokenCurriculumNote(
         "Exit Lesson",
-        this.currentLearningTopic.takeaway,
+        `Takeaway: ${this.currentLearningTopic.takeaway}`,
         time,
-        `Before exiting, check budget: ${budget.estimatedTotalTokens}/${budget.contextWindow}. In Loopy: ${getLearningInGameExample(this.level.id)}`,
+        `Before exiting, check Token Lab: ${budget.estimatedTotalTokens}/${budget.contextWindow}.\nIn Loopy: ${getLearningInGameExample(this.level.id)}`,
       );
     }
 
@@ -1924,8 +1924,8 @@ export class LevelScene extends Phaser.Scene {
           [
             `What you learned: ${this.currentLearningTopic.coreIdea}`,
             `Why it matters: ${this.currentLearningTopic.whyItMatters}`,
-            `In this run: ${getLearningInGameExample(this.level.id)}`,
-            `Token Lab result: in ${tokenBudget.estimatedInputTokens} | out ${tokenBudget.estimatedOutputTokens} | total ${tokenBudget.estimatedTotalTokens}/${tokenBudget.contextWindow}.`,
+            `How it showed up in your run: ${getLearningInGameExample(this.level.id)}`,
+            `Token Lab result: in ${tokenBudget.estimatedInputTokens}, out ${tokenBudget.estimatedOutputTokens}, total ${tokenBudget.estimatedTotalTokens}/${tokenBudget.contextWindow}.`,
             nextStepPrompt,
           ].join("\n"),
         takeaway: `${this.currentLearningTopic.takeaway} ${masteryHint}`,

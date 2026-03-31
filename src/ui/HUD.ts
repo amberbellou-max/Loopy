@@ -25,6 +25,8 @@ export class HUD {
   private readonly scene: Phaser.Scene;
   private readonly healthBg: Phaser.GameObjects.Rectangle;
   private readonly healthFill: Phaser.GameObjects.Rectangle;
+  private readonly leftHudPanel: Phaser.GameObjects.Rectangle;
+  private readonly rightHudPanel: Phaser.GameObjects.Rectangle;
   private readonly quotaText: Phaser.GameObjects.Text;
   private readonly timerText: Phaser.GameObjects.Text;
   private readonly checkpointText: Phaser.GameObjects.Text;
@@ -70,7 +72,6 @@ export class HUD {
   private tokenTutorHideTimer: Phaser.Time.TimerEvent | null = null;
   private spaceDismissHandler: (() => void) | null = null;
   private enterContinueHandler: (() => void) | null = null;
-  private spaceContinueHandler: (() => void) | null = null;
   private resizeHandler: (() => void) | null = null;
 
   private recapContinueHandler: (() => void) | null = null;
@@ -97,6 +98,15 @@ export class HUD {
     this.scene = scene;
 
     const margin = HUD_CONFIG.margin;
+
+    this.leftHudPanel = scene.add
+      .rectangle(margin + 148, margin + 124, 296, 214, 0x062f24, 0.3)
+      .setOrigin(0.5)
+      .setStrokeStyle(1, 0x77e7c4, 0.35);
+    this.rightHudPanel = scene.add
+      .rectangle(scene.scale.width - margin - 118, margin + 56, 236, 108, 0x062f24, 0.26)
+      .setOrigin(0.5)
+      .setStrokeStyle(1, 0x77e7c4, 0.32);
 
     this.healthBg = scene.add.rectangle(margin + 100, margin + 12, 200, 18, 0x1c3d35, 0.9).setOrigin(0, 0);
     this.healthFill = scene.add.rectangle(margin + 102, margin + 14, 196, 14, 0x56dfb3, 0.95).setOrigin(0, 0);
@@ -327,6 +337,7 @@ export class HUD {
     this.recapContainer.setVisible(false);
     this.recapContainer.alpha = 0;
     this.recapBackdrop.setVisible(false);
+    this.recapBackdrop.disableInteractive();
 
     this.bossBarBg = scene.add.rectangle(scene.scale.width * 0.5, 54, 480, 16, 0x1a1d2f, 0.92).setOrigin(0.5, 0);
     this.bossBarFill = scene.add.rectangle(scene.scale.width * 0.5 - 238, 56, 476, 12, 0xea5f8c, 0.95).setOrigin(0, 0);
@@ -339,6 +350,8 @@ export class HUD {
     }).setOrigin(0.5, 0);
 
     [
+      this.leftHudPanel,
+      this.rightHudPanel,
       this.healthBg,
       this.healthFill,
       this.quotaText,
@@ -356,7 +369,7 @@ export class HUD {
       this.bossLabel,
     ].forEach((entry) => {
       entry.setScrollFactor(0);
-      entry.setDepth(50);
+      entry.setDepth(entry === this.leftHudPanel || entry === this.rightHudPanel ? 49 : 50);
     });
 
     if (scene.input.keyboard) {
@@ -367,9 +380,7 @@ export class HUD {
       };
       scene.input.keyboard.on("keydown-ESC", this.spaceDismissHandler);
       this.enterContinueHandler = () => this.tryContinueRecap();
-      this.spaceContinueHandler = () => this.tryContinueRecap();
       scene.input.keyboard.on("keydown-ENTER", this.enterContinueHandler);
-      scene.input.keyboard.on("keydown-SPACE", this.spaceContinueHandler);
     }
 
     this.resizeHandler = () => this.applyLayout();
@@ -512,13 +523,14 @@ export class HUD {
     this.recapBody.setText(note.body);
     this.recapTakeaway.setText(`Takeaway: ${note.takeaway}`);
     this.recapButtonLabel.setText(note.continueLabel ?? "Continue");
-    this.recapHint.setText("Recap locked for a few seconds so players can read.");
+    this.recapHint.setText("Recap locked briefly so players can read before continuing.");
     this.recapButtonBg.setFillStyle(0x4e7467, 1);
     this.recapButtonLabel.setColor("#d6ebe2");
 
     this.layoutRecapCard();
 
     this.recapBackdrop.setVisible(true);
+    this.recapBackdrop.setInteractive({ useHandCursor: true });
     this.recapBackdrop.alpha = 0;
     this.recapContainer.setVisible(true);
     this.recapContainer.alpha = 0;
@@ -541,7 +553,7 @@ export class HUD {
 
     this.recapGateTimer = this.scene.time.delayedCall(minVisible, () => {
       this.recapCanContinue = true;
-      this.recapHint.setText("Press Enter/Space or click Continue");
+      this.recapHint.setText("Press Enter or click Continue");
       this.recapButtonBg.setFillStyle(0x8ff8d3, 1);
       this.recapButtonLabel.setColor("#052519");
       this.recapButtonPulseTween = this.scene.tweens.add({
@@ -603,6 +615,13 @@ export class HUD {
     const infoFont = compact ? "14px" : "18px";
     const leftTop = margin + (compact ? 22 : 38);
     const lineGap = compact ? 20 : 24;
+    const leftPanelWidth = compact ? Phaser.Math.Clamp(Math.floor(width * 0.32), 180, 260) : 300;
+    const leftPanelHeight = compact ? 176 : 214;
+    this.leftHudPanel
+      .setPosition(margin + leftPanelWidth * 0.5, margin + 14 + leftPanelHeight * 0.5)
+      .setSize(leftPanelWidth, leftPanelHeight)
+      .setFillStyle(0x062f24, compact ? 0.26 : 0.3)
+      .setStrokeStyle(1, 0x77e7c4, compact ? 0.28 : 0.35);
 
     this.quotaText.setFontSize(labelFont).setPosition(margin, leftTop);
     this.timerText.setFontSize(infoFont).setPosition(margin, leftTop + lineGap);
@@ -627,12 +646,22 @@ export class HUD {
       .setFontSize(compact ? "13px" : "16px")
       .setStroke("#03170f", compact ? 2 : 3)
       .setPosition(width - margin, margin + (compact ? 48 : 66));
+    const rightPanelWidth = compact ? Phaser.Math.Clamp(Math.floor(width * 0.36), 190, 250) : 236;
+    const rightPanelHeight = compact ? 98 : 108;
+    this.rightHudPanel
+      .setPosition(width - margin - rightPanelWidth * 0.5, margin + 8 + rightPanelHeight * 0.5)
+      .setSize(rightPanelWidth, rightPanelHeight)
+      .setFillStyle(0x062f24, compact ? 0.24 : 0.26)
+      .setStrokeStyle(1, 0x77e7c4, compact ? 0.28 : 0.32);
 
     if (compact && width < 620) {
       const stackedY = leftTop + lineGap * 5 + 6;
       this.comboText.setPosition(width - margin, stackedY);
       this.checkpointCostText.setPosition(width - margin, stackedY + 20);
       this.specialsText.setPosition(width - margin, stackedY + 38);
+      this.rightHudPanel
+        .setPosition(width - margin - rightPanelWidth * 0.5, stackedY + 26)
+        .setSize(rightPanelWidth, 74);
     }
 
     this.checkpointText
@@ -782,7 +811,7 @@ export class HUD {
     const panelLeft = -this.tokenTutorPanelWide * 0.5 + 14;
     const panelTop = -this.tokenTutorBg.height * 0.5;
     const titleY = panelTop + (this.tokenTutorCompact ? 7 : 10);
-    const gap = this.tokenTutorCompact ? 6 : 9;
+    const gap = this.tokenTutorCompact ? 6 : 10;
 
     this.tokenTutorTitle.setPosition(panelLeft, titleY);
     this.tokenTutorBody.setPosition(panelLeft, titleY + this.tokenTutorTitle.displayHeight + gap);
@@ -836,7 +865,7 @@ export class HUD {
     this.recapHeaderText.setPosition(left, top + 8);
     this.recapTitle.setPosition(left, this.recapHeaderText.y + this.recapHeaderText.displayHeight + 8);
     this.recapSubtitle.setPosition(left, this.recapTitle.y + this.recapTitle.displayHeight + gap);
-    this.recapBody.setPosition(left, this.recapSubtitle.y + this.recapSubtitle.displayHeight + gap);
+    this.recapBody.setPosition(left, this.recapSubtitle.y + this.recapSubtitle.displayHeight + gap + 2);
     this.recapTakeaway.setPosition(left, this.recapBody.y + this.recapBody.displayHeight + gap);
     this.recapButtonBg.setPosition(0, this.recapTakeaway.y + this.recapTakeaway.displayHeight + 28);
     this.recapButtonLabel.setPosition(this.recapButtonBg.x, this.recapButtonBg.y);
@@ -872,6 +901,7 @@ export class HUD {
       this.recapButtonPulseTween.stop();
       this.recapButtonPulseTween = null;
     }
+    this.recapBackdrop.disableInteractive();
     this.recapButtonBg.setScale(1);
     this.scene.tweens.killTweensOf([this.recapBackdrop, this.recapContainer]);
     this.recapBackdrop.setVisible(false);
@@ -894,14 +924,12 @@ export class HUD {
       this.scene.input.keyboard.off("keydown-ENTER", this.enterContinueHandler);
       this.enterContinueHandler = null;
     }
-    if (this.spaceContinueHandler && this.scene.input.keyboard) {
-      this.scene.input.keyboard.off("keydown-SPACE", this.spaceContinueHandler);
-      this.spaceContinueHandler = null;
-    }
     if (this.tokenTutorHideTimer) {
       this.tokenTutorHideTimer.remove(false);
       this.tokenTutorHideTimer = null;
     }
+    this.leftHudPanel.destroy();
+    this.rightHudPanel.destroy();
     this.healthBg.destroy();
     this.healthFill.destroy();
     this.quotaText.destroy();

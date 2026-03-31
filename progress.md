@@ -156,3 +156,25 @@ Original prompt: Build and iterate a playable web game in this workspace, valida
   - `npm run test` passed (29/29).
   - `npm run build` passed.
   - Attempted skill-loop screenshot capture with `web_game_playwright_client`; headless capture in this environment produced blank output at `output/web-game/ui-pass-academy/shot-0.png` despite successful script exit, so visual verification should be re-run on a normal desktop browser/session.
+
+## 2026-03-30
+- Finalized lesson/UI polish from working tree and rebuilt Pages bundle.
+- Source updates retained and validated:
+  - `src/main.ts`: fixed `autolevel` query handling in E2E mode so missing `autolevel` no longer auto-starts Level 1.
+  - `src/ui/HUD.ts`: added translucent left/right HUD panels for readability; tightened recap interactions/copy (Enter/click continue only, interactive backdrop toggling, clearer gating text).
+  - `src/scenes/LevelScene.ts`: clarified lesson/milestone/overflow/mid-level/exit messaging and recap phrasing for clearer pedagogy.
+  - `src/scenes/WorldMapScene.ts`: added `Try this run` line to map focus panel and adjusted panel sizing/typography.
+- Validation:
+  - `npx tsc --noEmit` passed.
+  - `npm run test` passed (29/29).
+  - `npm run build` passed.
+  - `npm run build:pages-root` passed and regenerated `assets/index.js` for GitHub Pages.
+- Playwright skill-loop checks (with screenshot + state inspection):
+  - Level lesson overlay visible/readable: `output/web-game/final-ui-l1-lesson/shot-0.png`.
+  - World map educational focus panel visible/readable: `output/web-game/final-ui-worldmap/shot-0.png`.
+  - Token Academy UI visible/readable: `output/web-game/final-ui-academy-waitclick/shot-0.png`.
+- No new runtime error artifacts generated in these runs.
+- Additional map layout polish after validation:
+  - Moved world-map focus panel down (`tokenPanelY`) so the "Highest unlocked level" line is always visible above it.
+- Extra visual verification:
+  - Confirmed updated world-map layering with direct debug-scene capture (`output/web-game/final-ui-worldmap-v4/shot-0.png`).

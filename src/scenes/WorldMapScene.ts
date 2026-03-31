@@ -1,5 +1,5 @@
 import Phaser from "phaser";
-import { getLearningInGameExample, getLearningTopicForLevel } from "../data/levelLearningTopics";
+import { getLearningInGameExample, getLearningTopicForLevel, getLearningTryItPrompt } from "../data/levelLearningTopics";
 import { SaveSystem } from "../systems/SaveSystem";
 import { MAX_LEVEL_ID } from "../data/levels";
 
@@ -39,10 +39,11 @@ export class WorldMapScene extends Phaser.Scene {
 
     const focusTopic = getLearningTopicForLevel(selectedLevel);
     const focusGameExample = getLearningInGameExample(selectedLevel);
+    const focusTryIt = getLearningTryItPrompt(selectedLevel);
     const focusTrackLabel = focusTopic.track === "tokens" ? "Tokens" : "Neural Nets";
     const tokenPanelWidth = Phaser.Math.Clamp(width - 64, 340, 1000);
-    const tokenPanelHeight = compact ? 126 : 142;
-    const tokenPanelY = compact ? 186 : 184;
+    const tokenPanelHeight = compact ? 142 : 166;
+    const tokenPanelY = compact ? 214 : 220;
     const tokenPanelLeft = width * 0.5 - tokenPanelWidth * 0.5 + 20;
 
     this.add
@@ -60,14 +61,14 @@ export class WorldMapScene extends Phaser.Scene {
       .text(
         tokenPanelLeft,
         tokenPanelY - tokenPanelHeight * 0.5 + 34,
-        `${focusTopic.title}\nCore idea: ${focusTopic.coreIdea}\nIn Loopy: ${focusGameExample}`,
+        `${focusTopic.title}\nCore idea: ${focusTopic.coreIdea}\nIn Loopy: ${focusGameExample}\nTry this run: ${focusTryIt}`,
         {
-          fontSize: compact ? "14px" : "17px",
+          fontSize: compact ? "13px" : "16px",
           color: "#bcf6df",
           align: "left",
-          fontStyle: compact ? "normal" : "bold",
+          fontStyle: "bold",
           wordWrap: { width: tokenPanelWidth - 40 },
-          lineSpacing: compact ? 3 : 5,
+          lineSpacing: compact ? 3 : 4,
         },
       )
       .setOrigin(0, 0);

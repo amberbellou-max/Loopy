@@ -91,8 +91,9 @@ if (isE2EMode) {
 
   window.render_game_to_text = () => renderGameToText();
 
-  const requestedLevel = Number(searchParams.get("autolevel"));
-  if (Number.isFinite(requestedLevel)) {
+  const autolevelParam = searchParams.get("autolevel");
+  const requestedLevel = autolevelParam === null ? null : Number(autolevelParam);
+  if (requestedLevel !== null && Number.isFinite(requestedLevel)) {
     const levelId = Phaser.Math.Clamp(Math.floor(requestedLevel), 1, MAX_LEVEL_ID);
     const startRequestedLevel = (): void => {
       if (game.scene.isBooted) {
