@@ -1,0 +1,7 @@
+gameplay loop | implemented and browser-smoke verified | Browser check confirmed menu, start, seed growth, fruit, bunny eating, bunny multiplication, starvation game over, and level-2 eagle presence. | Tune balance after playtesting.
+github repository | partially blocked | Current folder already tracks https://github.com/amberbellou-max/Loopy.git; local gh CLI is unavailable for creating a separate new repo. | Use existing remote if acceptable, or create the new GitHub repo through available GitHub web/API access and push this code.
+github pages live URL | pending | Workflow exists, but this run has not yet pushed/deployed and cannot claim the live page updated. | Push to the chosen GitHub repo and confirm the Pages deployment URL.
+art and audio | placeholder | Game uses generated placeholder sprites and no sound. | Add final sprite art, animation, SFX, and music.
+mobile controls | partial | Tap planting works, but magic burst is keyboard-only in the MVP. | Add touch magic control before prioritizing mobile players.
+persistence | not implemented | No high score or highest-level save state yet. | Add localStorage save after core gameplay tuning.
+playwright e2e runner | blocked | `npm run test:e2e` hung while loading Playwright modules and never reached the preview server or tests. | Re-run after environment warms up or debug Playwright startup separately.

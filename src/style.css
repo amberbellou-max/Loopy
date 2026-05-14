@@ -1,7 +1,7 @@
 :root {
-  --bg: #0d2b22;
-  --fg: #f4fff9;
-  --accent: #9bffe1;
+  --bg: #7fbd79;
+  --fg: #24160f;
+  --accent: #ffd86f;
 }
 
 * {
@@ -16,7 +16,7 @@ body,
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background: radial-gradient(circle at 20% 10%, #2d8f76 0%, var(--bg) 62%);
+  background: linear-gradient(180deg, #b7e6ff 0%, #7fbd79 62%, #4e8f50 100%);
   color: var(--fg);
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
   touch-action: manipulation;

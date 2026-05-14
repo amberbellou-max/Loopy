@@ -1,12 +1,12 @@
 {
-  "name": "loopy",
+  "name": "bunny-bloom",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && if [ -f dist/index.build.html ]; then mv dist/index.build.html dist/index.html; fi",
-    "build:pages-root": "GITHUB_ACTIONS=true GITHUB_REPOSITORY=amberbellou-max/Loopy npm run build && rm -rf assets && cp -R dist/assets assets",
+    "build": "tsc --noEmit -p tsconfig.build.json && vite build && if [ -f dist/index.build.html ]; then mv dist/index.build.html dist/index.html; fi",
+    "build:pages-root": "GITHUB_ACTIONS=true GITHUB_REPOSITORY=${GITHUB_REPOSITORY:-amberbellou-max/Loopy} npm run build && rm -rf assets && cp -R dist/assets assets",
     "ios:add": "npm run build && npx cap add ios",
     "ios:sync": "npm run build && npx cap sync ios",
     "ios:open": "npx cap open ios",

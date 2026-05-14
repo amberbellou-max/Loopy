@@ -1,0 +1,134 @@
+1) Product summary
+Bunny Bloom is a live-playable browser game where the player controls a fairy in a meadow, plants seeds, waits for trees to grow fruit, and feeds bunnies that multiply every time they eat. The run becomes harder by level as bunny multiplication increases and an eagle predator starts hunting the fairy. The game is intended to be hosted from GitHub Pages so people can play from a public URL.
+
+2) Target users
+The product is for casual browser-game players who want a fast, readable survival-management loop. It solves for an immediately playable arcade challenge: plant quickly enough to keep a growing bunny population fed while dodging predator pressure.
+
+3) Final user experience
+The user opens the game URL and sees a start menu. In play, the user moves the fairy with keyboard controls, plants seeds with Space/click/tap, watches seeds grow into fruit trees, and tracks a HUD showing level, feed goal, bunny count, fruit count, food timer, hearts, and eagle status. Bunnies automatically seek fruit and multiply after eating. If no fruit is available, the food timer drains and the player loses when it reaches zero. From level 2 onward, an eagle chases the fairy; the player can avoid it or use a magic burst to damage it. Defeating the eagle clears some bunnies, reducing feeding pressure. Completing a level advances to a harder meadow.
+
+4) Core features
+Required features:
+- Fairy movement.
+- Seed planting.
+- Timed plant growth into fruit.
+- Bunny AI that seeks and eats fruit.
+- Bunny multiplication after fruit is eaten.
+- Starvation/food-out failure state.
+- Level progression with harder bunny multiplication.
+- Eagle predator that chases and damages the fairy.
+- Player magic burst that can defeat the eagle.
+- Eagle defeat benefit that removes some bunnies.
+- GitHub Pages-ready browser deployment.
+
+Optional/nice-to-have features:
+- Sprite-sheet art and animation polish.
+- Touch-specific magic button.
+- Sound effects and music.
+- Persistent high score or highest level.
+- Difficulty tuning menu.
+
+Out-of-scope for this first build pass:
+- Backend services.
+- Accounts, leaderboards, or payments.
+- App Store shipping.
+- Multiplayer.
+
+5) Screens/pages/components
+- Start menu: title, premise, controls, start action.
+- Gameplay scene: meadow, fairy, plots, bunnies, eagle, HUD.
+- Level-complete overlay: completion feedback and next-level action.
+- Game-over overlay: failure reason and restart action.
+- GitHub Pages workflow: builds and deploys the static web app.
+
+6) Data and state
+Inputs:
+- Keyboard movement and actions.
+- Pointer click/tap planting.
+- Debug hooks for E2E mode.
+
+Outputs:
+- Canvas-rendered gameplay.
+- DOM data attributes for E2E state checks.
+- Static `dist/` build for deployment.
+
+Stored data:
+- None in the current MVP.
+
+API calls/integrations:
+- GitHub Pages deployment through GitHub Actions.
+
+Loading, empty, error, success, and edge states:
+- Loading is handled by the Vite browser bundle.
+- Empty-food state drains the food timer.
+- Game-over states cover starvation and eagle hits.
+- Success state is level completion.
+- Edge states include capped active plots and capped bunny population to preserve playability.
+
+7) Technical architecture
+Current inferred architecture:
+- Vite + TypeScript + Phaser 3.
+- Static browser app mounted in `#app`.
+- GitHub Actions deploy workflow already present.
+
+Target architecture:
+- Keep the first playable MVP in a self-contained Phaser scene.
+- Use generated placeholder textures until final art exists.
+- Keep GitHub Pages deployment static and repo-path aware.
+
+Important dependencies:
+- `phaser`
+- `vite`
+- `typescript`
+- `vitest`
+- `@playwright/test`
+
+Relevant entrypoints:
+- `src/main.ts`
+- `src/game/Game.ts`
+- `src/scenes/FairyForageScene.ts`
+- `tsconfig.build.json`
+- `index.html`
+- `index.build.html`
+- `.github/workflows/deploy-pages.yml`
+
+Build/run/test commands when known:
+- `npm install`
+- `npm run dev`
+- `npm run build`
+- `npm run test`
+- `npm run test:e2e`
+
+8) Acceptance criteria
+- Game opens to the Bunny Bloom start menu.
+- Player can start a run.
+- Player can move the fairy.
+- Player can plant seeds with keyboard and pointer input.
+- Seeds visibly grow into fruit after a few seconds.
+- Bunnies move toward fruit, eat it, and multiply.
+- The HUD shows level, goal, bunnies, fruit, food timer, hearts, and eagle state.
+- If no fruit is available long enough, the game ends.
+- Higher levels increase multiplication pressure.
+- Eagle appears from level 2 onward, chases the fairy, and can cause game over.
+- Magic burst can damage and defeat the eagle.
+- Defeating the eagle removes some bunnies.
+- `npm run build` succeeds.
+- E2E smoke tests verify start, feeding/multiplication, and eagle pressure.
+- GitHub Pages workflow exists for deployment.
+
+9) Current gaps
+- Production build passes and unit tests pass.
+- Browser smoke verification confirms the first playable loop and level-2 eagle presence.
+- Needs final art/audio polish.
+- Needs live GitHub creation/push confirmation; local `gh` CLI is not installed.
+- Needs final public URL confirmation after push/deploy.
+- Needs touch-specific magic action if mobile play is a priority.
+- Playwright E2E runner hangs during startup in this environment and needs separate follow-up.
+
+10) Build sequence
+1. Inspect current repo, scripts, deployment, and Phaser architecture.
+2. Implement a self-contained playable Bunny Bloom MVP scene.
+3. Update entrypoint, docs, title, and E2E tests for the new game.
+4. Run typecheck/build/unit/E2E checks and fix failures.
+5. Review diff and update build records.
+6. Publish or hand off the GitHub Pages deployment path.

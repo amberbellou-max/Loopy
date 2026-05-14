@@ -1,89 +1,83 @@
 import { expect, test } from "@playwright/test";
 
-type LoopyDebug = {
-  resetSave: () => void;
-  startLevel: (level: number) => void;
-  openWorldMap: (selectedLevel?: number) => void;
-  getSave: () => {
-    highestUnlockedLevel: number;
-    levelBestScores: Record<number, number>;
-  };
+type FairyForageSnapshot = {
+  phase: string;
+  level: number;
+  fedCount: number;
+  feedGoal: number;
+  bunnies: number;
+  ripeFruit: number;
+  plots: number;
+  fairyHealth: number;
+  famineRemainingMs: number;
+  eagleHp: number | null;
 };
+
+type FairyForageDebug = {
+  startGame: (level?: number) => void;
+  plantAt: (x: number, y: number) => boolean;
+  forceFruit: (count?: number) => void;
+  castMagic: () => void;
+  getSnapshot: () => FairyForageSnapshot;
+};
+
+declare global {
+  interface Window {
+    fairyForageDebug?: FairyForageDebug;
+  }
+}
 
 async function prepare(page: import("@playwright/test").Page): Promise<void> {
   await page.goto("/?e2e=1");
-  await page.waitForFunction(() => Boolean((window as Window & { loopyDebug?: LoopyDebug }).loopyDebug));
+  await page.waitForFunction(() => Boolean(window.fairyForageDebug && document.body.dataset.fairyReady));
+}
+
+test("starts the playable fairy forage loop", async ({ page }) => {
+  await prepare(page);
+  await page.evaluate(() => window.fairyForageDebug?.startGame(1));
+  await page.waitForFunction(() => document.body.dataset.fairyPhase === "playing");
+
+  const snapshot = await page.evaluate(() => window.fairyForageDebug?.getSnapshot());
+  expect(snapshot?.level).toBe(1);
+  expect(snapshot?.bunnies).toBeGreaterThanOrEqual(2);
+  expect(snapshot?.feedGoal).toBeGreaterThan(0);
+});
+
+test("plants fruit and bunnies multiply after eating", async ({ page }) => {
+  await prepare(page);
   await page.evaluate(() => {
-    (window as Window & { loopyDebug?: LoopyDebug }).loopyDebug?.resetSave();
+    window.fairyForageDebug?.startGame(1);
+    window.fairyForageDebug?.forceFruit(3);
   });
-}
 
-async function startLevel(page: import("@playwright/test").Page, level: number): Promise<void> {
-  await page.evaluate((targetLevel) => {
-    (window as Window & { loopyDebug?: LoopyDebug }).loopyDebug?.startLevel(targetLevel);
-  }, level);
-  await page.waitForFunction(
-    (expected) => document.body.dataset.loopyCurrentLevel === String(expected),
-    level,
-  );
-}
+  await page.waitForFunction(() => {
+    const snapshot = window.fairyForageDebug?.getSnapshot();
+    return Boolean(snapshot && snapshot.fedCount >= 1 && snapshot.bunnies > 2);
+  });
 
-async function completeLevelWithDebugKey(page: import("@playwright/test").Page, level: number): Promise<void> {
-  await page.keyboard.press("N");
-  await page.waitForFunction(
-    (expected) => document.body.dataset.loopyLevelCompleted === String(expected),
-    level,
-  );
-}
-
-test("start run, finish level 1, unlock level 2", async ({ page }) => {
-  await prepare(page);
-  await startLevel(page, 1);
-  await completeLevelWithDebugKey(page, 1);
-
-  const unlocked = await page.evaluate(
-    () => (window as Window & { loopyDebug?: LoopyDebug }).loopyDebug?.getSave().highestUnlockedLevel,
-  );
-  expect(unlocked).toBe(2);
+  const snapshot = await page.evaluate(() => window.fairyForageDebug?.getSnapshot());
+  expect(snapshot?.fedCount).toBeGreaterThanOrEqual(1);
+  expect(snapshot?.bunnies).toBeGreaterThan(2);
 });
 
-test("checkpoint death respawns player at checkpoint", async ({ page }) => {
+test("higher levels increase bunny multiplication and enable eagle pressure", async ({ page }) => {
   await prepare(page);
-  await startLevel(page, 1);
+  await page.evaluate(() => {
+    window.fairyForageDebug?.startGame(3);
+    window.fairyForageDebug?.forceFruit(1);
+  });
 
-  await page.keyboard.press("C");
-  await page.waitForFunction(() => Boolean(document.body.dataset.loopyLastCheckpointX));
+  await page.waitForFunction(() => {
+    const snapshot = window.fairyForageDebug?.getSnapshot();
+    return Boolean(snapshot && snapshot.fedCount >= 1);
+  });
 
-  await page.keyboard.press("K");
-  await page.waitForFunction(() => document.body.dataset.loopyRespawnCount === "1");
-});
+  const snapshot = await page.evaluate(() => window.fairyForageDebug?.getSnapshot());
+  expect(snapshot?.level).toBe(3);
+  expect(snapshot?.bunnies).toBeGreaterThanOrEqual(5);
 
-test("milestone completion unlocks ability", async ({ page }) => {
-  await prepare(page);
-
-  for (const level of [1, 2, 3, 4]) {
-    await startLevel(page, level);
-    await completeLevelWithDebugKey(page, level);
-  }
-
-  await page.waitForFunction(() => document.body.dataset.loopyAbilityUnlocked === "dash");
-
-  const unlocked = await page.evaluate(
-    () => (window as Window & { loopyDebug?: LoopyDebug }).loopyDebug?.getSave().highestUnlockedLevel,
-  );
-  expect(unlocked).toBe(5);
-});
-
-test("save persists after reload", async ({ page }) => {
-  await prepare(page);
-  await startLevel(page, 1);
-  await completeLevelWithDebugKey(page, 1);
-
-  await page.reload();
-  await page.waitForFunction(() => Boolean((window as Window & { loopyDebug?: LoopyDebug }).loopyDebug));
-
-  const unlocked = await page.evaluate(
-    () => (window as Window & { loopyDebug?: LoopyDebug }).loopyDebug?.getSave().highestUnlockedLevel,
-  );
-  expect(unlocked).toBe(2);
+  await page.waitForFunction(() => {
+    const snapshot = window.fairyForageDebug?.getSnapshot();
+    return snapshot?.eagleHp !== null;
+  });
 });

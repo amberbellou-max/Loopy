@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/main.ts",
+    "src/game/Game.ts",
+    "src/scenes/FairyForageScene.ts",
+    "src/data/balance.ts",
+    "src/vite-env.d.ts"
+  ],
+  "exclude": ["tests", "output", "dist", "node_modules"]
+}

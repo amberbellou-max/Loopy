@@ -1,14 +1,6 @@
 import Phaser from "phaser";
 import { GAME_HEIGHT, GAME_WIDTH } from "../data/balance";
-import { BootScene } from "../scenes/BootScene";
-import { GameOverScene } from "../scenes/GameOverScene";
-import { LevelScene } from "../scenes/LevelScene";
-import { MainMenuScene } from "../scenes/MainMenuScene";
-import { PauseScene } from "../scenes/PauseScene";
-import { PreloadScene } from "../scenes/PreloadScene";
-import { TokenAcademyScene } from "../scenes/TokenAcademyScene";
-import { VictoryScene } from "../scenes/VictoryScene";
-import { WorldMapScene } from "../scenes/WorldMapScene";
+import { FairyForageScene } from "../scenes/FairyForageScene";
 
 interface CreateGameOptions {
   forceCanvas?: boolean;
@@ -20,7 +12,7 @@ export function createGame(parent: string, options: CreateGameOptions = {}): Pha
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
     parent,
-    backgroundColor: "#0d2b22",
+    backgroundColor: "#b7e6ff",
     render: {
       pixelArt: true,
       antialias: false,
@@ -42,16 +34,6 @@ export function createGame(parent: string, options: CreateGameOptions = {}): Pha
       mode: Phaser.Scale.FIT,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [
-      BootScene,
-      PreloadScene,
-      MainMenuScene,
-      TokenAcademyScene,
-      WorldMapScene,
-      LevelScene,
-      PauseScene,
-      GameOverScene,
-      VictoryScene,
-    ],
+    scene: [FairyForageScene],
   });
 }

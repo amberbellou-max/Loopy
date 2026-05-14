@@ -1,0 +1,45 @@
+Major files/folders
+- `src/main.ts`: Bootstraps the Phaser app, enables E2E/debug hooks in dev or `?e2e=1`, and exposes `window.render_game_to_text()`.
+- `src/game/Game.ts`: Creates the Phaser game instance and registers `FairyForageScene`.
+- `src/scenes/FairyForageScene.ts`: Main Bunny Bloom runtime. Owns menu, level state, planting, plant growth, bunny AI, fruit eating, bunny multiplication, starvation timer, eagle predator, magic burst, overlays, generated textures, HUD, and debug snapshot methods.
+- `src/style.css`: Full-screen browser shell styling behind the Phaser canvas.
+- `tsconfig.build.json`: Focused production typecheck config for the active Bunny Bloom entrypoints.
+- `index.html`: Local/dev root entry with dynamic GitHub Pages fallback asset loading.
+- `index.build.html`: Vite production build entry.
+- `.github/workflows/deploy-pages.yml`: GitHub Actions build and GitHub Pages deployment workflow.
+- `tests/e2e/game.spec.ts`: Playwright smoke tests for the current playable loop.
+- `_codex_build/runs/`: Timestamped build logs.
+- `_codex_build/final_build/`: Living blueprint, gaps, and architecture map.
+
+Components/modules
+- Start menu: implemented inside `FairyForageScene.showMenu()`.
+- Game setup: `FairyForageScene.startLevel()` and `getSettingsForLevel()`.
+- Planting: `plantSeedAt()`, `createPlot()`, `updatePlants()`, and `setPlotState()`.
+- Bunny behavior: `createBunny()`, `updateBunnies()`, `resolveBunnyTarget()`, and `handleFruitEaten()`.
+- Starvation: `updateFamine()`.
+- Eagle behavior: `spawnEagle()`, `updateEagle()`, `castMagic()`, and `defeatEagle()`.
+- HUD/debug: `createHud()`, `updateHud()`, `writeDataAttributes()`, and `getDebugSnapshot()`.
+
+Data flow
+- Player input drives fairy movement, seed planting, and magic burst.
+- Seed plots advance by elapsed scene time from seed to sprout to tree to fruit.
+- Bunnies read ripe fruit plots, move toward the nearest target, eat fruit, increment feed count, and spawn new bunnies based on the level multiplier.
+- The food timer drains whenever no fruit is available and replenishes while fruit exists.
+- The eagle spawns from level 2 onward, chases the fairy, damages hearts on contact, and can be defeated by magic if close enough.
+- Defeating the eagle removes nearby bunnies, reducing feed pressure.
+- Level completion occurs when fed count reaches the level feed goal.
+- Game over occurs when the food timer reaches zero or eagle hits remove all hearts.
+
+Dependencies
+- Phaser renders the game, input, tweens, generated textures, and scene lifecycle.
+- Vite builds the static browser bundle.
+- TypeScript production build checks the active Bunny Bloom entrypoints through `tsconfig.build.json`.
+- Playwright verifies browser smoke behavior.
+- Vitest remains available for existing unit-level checks.
+
+How pieces connect
+- `index.html` or `index.build.html` loads `src/main.ts`.
+- `src/main.ts` calls `createGame("app")`.
+- `createGame()` registers and starts `FairyForageScene`.
+- `FairyForageScene` owns all current game rules and draws everything on the Phaser canvas.
+- GitHub Actions runs `npm ci` and `npm run build`, uploads `dist`, and deploys through GitHub Pages.

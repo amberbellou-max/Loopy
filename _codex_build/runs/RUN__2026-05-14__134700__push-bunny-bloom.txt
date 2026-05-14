@@ -1,0 +1,67 @@
+run timestamp: 2026-05-14 13:47:00 EDT
+user request: Push changes and provide the playable link.
+interpreted goal: Commit and push the Bunny Bloom game changes to the existing GitHub remote, then provide the GitHub Pages play URL.
+target output: A pushed commit on `main` for `https://github.com/amberbellou-max/Loopy.git` and a shareable GitHub Pages URL.
+assumptions: Use the existing remote `amberbellou-max/Loopy` because this checkout already tracks it. Do not stage unrelated pre-existing `output/` files.
+constraints: Inspect before changing git state. Do not claim the live page is updated until push succeeds. Keep `_codex_build/` logs and final-build tracking current.
+files inspected:
+- git status --short --branch
+- git remote -v
+- git diff --stat
+- git diff --name-only
+plan:
+1. Confirm branch/remote status and upstream freshness.
+2. Run the relevant build/test checks again.
+3. Update build tracking for this push run.
+4. Stage only task-related files, excluding `output/`.
+5. Commit and push to `origin/main`.
+6. Report the Pages play link and any deploy caveat.
+actions taken:
+- Created this push run log.
+files changed:
+- _codex_build/runs/RUN__2026-05-14__134700__push-bunny-bloom.txt
+commands run:
+- date '+%Y-%m-%d %H:%M:%S %Z'
+- git status --short --branch
+- git remote -v
+- git diff --stat
+- git diff --name-only
+command results:
+- Current branch is `main` tracking `origin/main`.
+- Remote is `https://github.com/amberbellou-max/Loopy.git`.
+- Worktree has Bunny Bloom source/config/doc changes, new `_codex_build/`, new `src/scenes/FairyForageScene.ts`, new `tsconfig.build.json`, and unrelated untracked `output/`.
+tests/checks performed: none yet in this run.
+errors or blockers: none yet.
+remaining gaps: Need build/test, commit, push, and final link.
+next recommended action: Fetch upstream and run verification checks before staging.
+
+progress update: 2026-05-14 13:48 EDT
+actions taken:
+- Fetched `origin/main`.
+- Confirmed local `HEAD` and `origin/main` were not diverged before commit.
+- Re-ran production build.
+- Re-ran unit tests.
+
+additional commands run:
+- git fetch origin main
+- git rev-list --left-right --count HEAD...origin/main
+- npm run build
+- npm run test
+- git status --short --branch
+- find _codex_build -type f | sort
+- git check-ignore -v dist/index.html dist/assets/index.js assets/index.js output/web-game/state-0.json 2>/dev/null || true
+
+command results:
+- `git fetch origin main` succeeded.
+- `git rev-list --left-right --count HEAD...origin/main` returned `0 0`, so the local branch was aligned with remote before committing.
+- `npm run build` passed and produced `dist/`; Vite reported a Phaser bundle-size warning, not a build failure.
+- `npm run test` passed: 7 files, 29 tests.
+- `dist/` is ignored by `.gitignore`.
+- Untracked `output/` remains present and is not part of this push plan.
+
+tests/checks performed:
+- `npm run build`: passed.
+- `npm run test`: passed, 29/29 tests.
+
+remaining gaps:
+- Need stage selected task files, commit, and push.

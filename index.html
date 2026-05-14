@@ -3,12 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0" />
-    <title>Loopy: Fish Fairy</title>
+    <title>Bunny Bloom</title>
   </head>
   <body>
     <div id="app"></div>
     <script type="module">
-      const fallbackBase = "/Loopy/";
+      const pathParts = window.location.pathname.split("/").filter(Boolean);
+      const fallbackBase = pathParts.length > 0 ? `/${pathParts[0]}/` : "/";
       const hostname = window.location.hostname;
       const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1";
       const preferFallback = !isLocalHost && (hostname.endsWith("github.io") || window.location.pathname.startsWith("/Loopy/"));
@@ -16,12 +17,12 @@
       const showLoadError = (error) => {
         const app = document.getElementById("app");
         if (app) {
-          app.textContent = "Loopy failed to load. Please hard refresh this page.";
+          app.textContent = "Bunny Bloom failed to load. Please hard refresh this page.";
           app.style.color = "#ffe7c9";
           app.style.padding = "24px";
           app.style.fontFamily = "monospace";
         }
-        console.error("Loopy bootstrap failed", error);
+        console.error("Bunny Bloom bootstrap failed", error);
       };
 
       const loadFallbackBuild = async () => {
