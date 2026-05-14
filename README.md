@@ -31,7 +31,7 @@ Bunny Bloom is a Phaser 3 + TypeScript browser game about a fairy trying to keep
 - Primary setup: GitHub Pages source set to `GitHub Actions`.
 - The Vite base path is derived from `GITHUB_REPOSITORY` during GitHub Actions builds, so the same build can work under the repository's GitHub Pages path.
 - Current remote inspected locally: `https://github.com/amberbellou-max/Loopy.git`.
-- Existing Pages-style URL for that remote: `https://amberbellou-max.github.io/Loopy/`.
+- Live play URL: `https://amberbellou-max.github.io/Loopy/`.
 
 ## Project Layout
 - `src/scenes/FairyForageScene.ts`: the main game loop, generated sprites, planting, bunny feeding, levels, eagle pressure, HUD, and debug hooks.

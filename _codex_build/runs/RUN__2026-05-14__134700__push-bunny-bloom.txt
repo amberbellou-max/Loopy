@@ -65,3 +65,52 @@ tests/checks performed:
 
 remaining gaps:
 - Need stage selected task files, commit, and push.
+
+progress update: 2026-05-14 13:50 EDT
+actions taken:
+- Staged only task-related files; left untracked `output/` unstaged.
+- Created commit `3180fa3` with message `Build Bunny Bloom browser game`.
+- Pushed `main` to `origin`.
+- Checked the GitHub Actions Pages run for commit `3180fa3`.
+- Verified the public GitHub Pages HTML now serves `<title>Bunny Bloom</title>`.
+- Verified the deployed `assets/index.js` contains the Bunny Bloom/FairyForage runtime.
+- Opened the live Pages URL in the in-app browser and visually confirmed the Bunny Bloom menu renders.
+- Updated README, current gaps, and final blueprint with the verified live URL.
+
+additional commands run:
+- git add README.md capacitor.config.ts index.build.html index.html package-lock.json package.json src/game/Game.ts src/main.ts src/style.css tests/e2e/game.spec.ts src/scenes/FairyForageScene.ts tsconfig.build.json _codex_build/final_build/BUILD_MAP.txt _codex_build/final_build/CURRENT_GAPS.txt _codex_build/final_build/FINAL_BUILD_BLUEPRINT.txt _codex_build/runs/RUN__2026-05-14__131937__fairy-bunny-github-pages.txt _codex_build/runs/RUN__2026-05-14__134700__push-bunny-bloom.txt
+- git diff --cached --stat
+- git config user.name && git config user.email
+- git commit -m "Build Bunny Bloom browser game"
+- git push origin main
+- git ls-remote --heads origin main
+- curl -L -s -D - 'https://amberbellou-max.github.io/Loopy/?v=3180fa3-2' | sed -n '1,80p'
+- curl -L -s 'https://amberbellou-max.github.io/Loopy/assets/index.js?v=3180fa3' | rg -m 3 'Bunny Bloom|FairyForage|Start Meadow Run'
+- curl -s 'https://api.github.com/repos/amberbellou-max/Loopy/actions/runs?per_page=3' | sed -n '1,160p'
+- sleep 20; curl -s 'https://api.github.com/repos/amberbellou-max/Loopy/actions/runs/25875947052' | node -e "..."
+
+command results:
+- Commit succeeded: `3180fa3 Build Bunny Bloom browser game`.
+- Push succeeded: `b4f391b..3180fa3 main -> main`.
+- Remote `main` points to `3180fa330c4942e24422c85069c28ae3cb8f8feb`.
+- GitHub Actions run `25875947052` completed with conclusion `success`.
+- Public Pages URL returned HTTP 200 and `<title>Bunny Bloom</title>`.
+- In-app browser title was `Bunny Bloom` and the live start menu rendered.
+
+tests/checks performed:
+- `npm run build`: passed.
+- `npm run test`: passed, 29/29 tests.
+- Live GitHub Pages smoke check: passed.
+
+errors or blockers:
+- None for the push/live deployment.
+- `output/` remains untracked intentionally.
+
+remaining gaps:
+- Final art/audio, mobile magic control, persistence, and Playwright runner startup remain future improvements.
+
+next recommended action:
+- Share `https://amberbellou-max.github.io/Loopy/`.
+
+completion summary:
+- Bunny Bloom was committed, pushed to GitHub, deployed by GitHub Pages, and verified live at `https://amberbellou-max.github.io/Loopy/`.

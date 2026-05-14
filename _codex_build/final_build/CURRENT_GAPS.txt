@@ -1,6 +1,6 @@
 gameplay loop | implemented and browser-smoke verified | Browser check confirmed menu, start, seed growth, fruit, bunny eating, bunny multiplication, starvation game over, and level-2 eagle presence. | Tune balance after playtesting.
-github repository | partially blocked | Current folder already tracks https://github.com/amberbellou-max/Loopy.git; local gh CLI is unavailable for creating a separate new repo. | Use existing remote if acceptable, or create the new GitHub repo through available GitHub web/API access and push this code.
-github pages live URL | pending | Workflow exists, but this run has not yet pushed/deployed and cannot claim the live page updated. | Push to the chosen GitHub repo and confirm the Pages deployment URL.
+github repository | pushed | Current folder tracks https://github.com/amberbellou-max/Loopy.git and the Bunny Bloom game was pushed to `main`. | Use the existing repo for this live version, or create a separate repo later if a new URL/name is required.
+github pages live URL | verified | GitHub Pages deployed successfully and the public page renders Bunny Bloom at https://amberbellou-max.github.io/Loopy/. | Share the live play URL and monitor the GitHub Actions deploy after future pushes.
 art and audio | placeholder | Game uses generated placeholder sprites and no sound. | Add final sprite art, animation, SFX, and music.
 mobile controls | partial | Tap planting works, but magic burst is keyboard-only in the MVP. | Add touch magic control before prioritizing mobile players.
 persistence | not implemented | No high score or highest-level save state yet. | Add localStorage save after core gameplay tuning.

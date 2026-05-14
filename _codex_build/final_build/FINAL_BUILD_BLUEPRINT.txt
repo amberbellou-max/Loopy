@@ -120,8 +120,8 @@ Build/run/test commands when known:
 - Production build passes and unit tests pass.
 - Browser smoke verification confirms the first playable loop and level-2 eagle presence.
 - Needs final art/audio polish.
-- Needs live GitHub creation/push confirmation; local `gh` CLI is not installed.
-- Needs final public URL confirmation after push/deploy.
+- Existing GitHub repo `amberbellou-max/Loopy` is pushed and live.
+- Public play URL verified: `https://amberbellou-max.github.io/Loopy/`.
 - Needs touch-specific magic action if mobile play is a priority.
 - Playwright E2E runner hangs during startup in this environment and needs separate follow-up.
 
